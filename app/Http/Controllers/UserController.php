@@ -12,25 +12,48 @@ use Illuminate\Support\Facades\Hash;
 class UserController extends Controller
 {
 
+    public function responderIndex(Request $request)
+    {
+        $sessionUser = auth()->user()->agency_id;
+        $search = $request->input('search');
+
+        $responders = User::where('user_type', 'responder')
+            ->where('agency_id', $sessionUser)
+            ->when($search, function ($query, $search) {
+                $query->where('firstname', 'like', "%{$search}%")
+                    ->orWhere('lastname', 'like', "%{$search}%")
+                    ->orWhere('position', 'like', "%{$search}%")
+                    ->orWhere('contact_number', 'like', "%{$search}%");
+            })
+            ->paginate(10)
+            ->withQueryString(); // keeps the search term in pagination links
+        
+        $totalAvailableResponder = User::where('user_type', 'responder')->where('agency_id', $sessionUser)->where('availability_status', 'Available')->count();
+
+        $totalUnavailableResponder = User::where('user_type', 'responder')->where('agency_id', $sessionUser)->where('availability_status', 'Unavailable')->count();
+
+        return view('PAGES/bfp/manage-personnel-responder', compact('responders', 'totalAvailableResponder', 'totalUnavailableResponder' ));
+    }
+
     // User Display
     public function userIndex(Request $request, $status, $id = null)
     {
         if ($id !== null) {
-            $users = User::where('agency_id', $id)->paginate(10);
+            $users = User::where('agency_id', $id)->orderBy('created_at', 'desc')->paginate(10);
         } else {
-            $users = User::where('user_type', '!=', 'admin')->paginate(10);
+            $users = User::where('user_type', '!=', 'admin')->orderBy('created_at', 'desc')->paginate(10);
         }
 
         if ($status !== 'All') {
             $users = User::whereHas('agency', function ($query) use ($status) {
                 $query->where('agencyTypes', $status);
-            })->paginate(10);
+            })->orderBy('created_at', 'desc')->paginate(10);
         } else {
             $users = User::where('user_type', '!=', 'admin')
                 ->when($id, function ($query, $id) {
                     return $query->where('agency_id', $id);
                 })
-                ->paginate(10);
+                ->orderBy('created_at', 'desc')->paginate(10);
         }
 
 
@@ -102,6 +125,8 @@ class UserController extends Controller
 
             if (auth()->user()->user_type === 'admin') {
                 return redirect()->route('admin.user', 'All')->with('success', 'Successfully Register Responder.');
+            } else {
+                return redirect()->back()->with('success', 'Successfully Register Responder');
             }
         } else {
 
@@ -114,46 +139,41 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if ($user && auth()->user()->user_type === 'admin') {
+        // Validate the request
+        $validatedData = $request->validate([
+            'agency_id' => 'nullable|exists:agencies,id',
+            'user_type' => 'nullable|in:operation-officer,responder,nurse-chief',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'lastname' => 'required|string|max:255',
+            'firstname' => 'required|string|max:255',
+            'gender' => 'required|in:m,f',
+            'position' => 'required|string|max:255',
+            'contact_number' => 'required|string|max:20',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'password' => 'nullable|min:8|confirmed',
+        ]);
 
-            // Validate the request
-            $validatedData = $request->validate([
-                'agency_id' => 'nullable|exists:agencies,id',
-                'user_type' => 'nullable|in:operation-officer,responder,nurse-chief',
-                'email' => 'required|email|unique:users,email,' . $id,
-                'lastname' => 'required|string|max:255',
-                'firstname' => 'required|string|max:255',
-                'gender' => 'required|in:m,f',
-                'position' => 'required|string|max:255',
-                'contact_number' => 'required|string|max:20',
-                'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-                'password' => 'nullable|min:8|confirmed',
-            ]);
-
-            // If password is filled, hash it
-            if ($request->filled('password')) {
-                $validatedData['password'] = bcrypt($request->password);
-            } else {
-                unset($validatedData['password']); // Remove password key if empty
-            }
-
-            // Handle photo upload
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('photos', 'public');
-                $validatedData['photo'] = $photoPath;
-            }
-
-            // Update the user
-            $updatedUser = $user->update($validatedData);
-
-            if ($updatedUser) {
-                return redirect()->back()->with('success', 'User updated successfully.');
-            } else {
-                return redirect()->back()->withErrors('Update failed. Please try again.');
-            }
+        // If password is filled, hash it
+        if ($request->filled('password')) {
+            $validatedData['password'] = bcrypt($request->password);
+        } else {
+            unset($validatedData['password']); // Remove password key if empty
         }
 
-        return redirect()->back()->withErrors('Unauthorized action.');
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('photos', 'public');
+            $validatedData['photo'] = $photoPath;
+        }
+
+        // Update the user
+        $updatedUser = $user->update($validatedData);
+
+        if ($updatedUser) {
+            return redirect()->back()->with('success', 'User updated successfully.');
+        } else {
+            return redirect()->back()->withErrors('Update failed. Please try again.');
+        }
     }
 
 
@@ -275,7 +295,7 @@ class UserController extends Controller
         return view('PAGES/admin/view-responders', compact('responder'));
     }
 
-    public function destroy($id)
+    public function userDelete($id)
     {
         $responder = User::findOrFail($id);
 
@@ -284,17 +304,9 @@ class UserController extends Controller
             'availability_status' => 'Unavailable'
         ]);
 
-        // Log action before delete
-        Log::create([
-            'interaction_type' => 'Delete Responder',
-            'creator_user_id' => auth()->id(),
-            'agency_id' => auth()->user()->agency_id,
-            'user_id' => $responder->id,
-        ]);
-
         $responder->delete();
 
-        return $responder ? redirect()->back()->with('success', 'Responder successfully deleted.') : redirect()->back()->with('error', 'Responder delete fail');
+        return $responder ? redirect()->back()->with('success', 'User successfully deleted.') : redirect()->back()->with('error', 'Responder delete fail');
     }
 
 
@@ -323,7 +335,7 @@ class UserController extends Controller
     {
         $responder = User::findOrFail($id);
         $responder->update([
-            'account_status' => 'Approved',
+            'account_status' => 'Active',
             'availability_status' => 'Available'
         ]);
 
@@ -333,8 +345,28 @@ class UserController extends Controller
     public function decline($id)
     {
         $responder = User::findOrFail($id);
-        $responder->update(['account_status' => 'Declined']);
+        $responder->update(['account_status' => 'Decline']);
 
         return redirect()->back()->with('success', 'Responder declined successfully.');
+    }
+
+    public function userDeactivate($id)
+    {
+
+        $user = User::findOrFail($id);
+
+        $user->update(['account_status' => 'Deactivate', 'availability_status' => 'Unavailable']);
+
+        return redirect()->back()->with('success', 'User Deactivated Successfully');
+    }
+
+    public function userActivate($id)
+    {
+
+        $user = User::findOrFail($id);
+
+        $user->update(['account_status' => 'Active', 'availability_status' => 'Available']);
+
+        return redirect()->back()->with('success', 'User Activate Successfully');
     }
 }

@@ -6,6 +6,8 @@
     Add User
 </button>
 
+
+
 <!-- Modal Background -->
 <div id="addUserModal"
     class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center 
@@ -44,48 +46,61 @@
                 </p>
             </div>
 
-            <form action="{{ route('admin.submit-user') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <form action="{{ route(auth()->user()->user_type === 'admin' ? 'admin.submit-user' : 'operation-officer.submit-responder') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
 
                 <input type="hidden" name="password" value="12345678">
                 <input type="hidden" name="password_confirmation" value="12345678">
-                <input type="hidden" name="account_status" value="Active">
-                <input type="hidden" name="availability_status" value="Available">
+                <input type="hidden" name="account_status" value="{{ auth()->user()->user_type === 'admin' ? 'Active' : 'Pending' }}">
+                <input type="hidden" name="availability_status" value="{{ auth()->user()->user_type === 'admin' ? 'Available' : 'Unavailable' }}">
 
                 <h3 class="text-[15px] font-[Poppins] font-semibold text-blue-700 border-l-4 border-blue-500 pl-2">
                     User Details
                 </h3>
 
-                <!-- Agency -->
-                <div>
-                    <label class="block text-gray-800 mb-1 font-[Poppins]">Agency</label>
-                    <select name="agency_id"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-[13px] font-[Roboto]
-                               focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-white shadow-sm transition">
-                        <option disabled selected>Choose Agency</option>
-                        @forelse ($agencies as $agency)
-                        <option value="{{ $agency->id }}">{{ $agency->agencyNames }}</option>
-                        @empty
-                        <option disabled>No agencies available</option>
-                        @endforelse
-                    </select>
-                    @error('agency_id')
-                    <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+
+                @php
+                $user = auth()->user();
+                @endphp
 
                 <!-- Role -->
                 <div>
                     <label class="block text-gray-800 mb-1 font-[Poppins]">User Role</label>
                     <select name="user_type"
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-[13px] font-[Roboto]
-                               focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-white shadow-sm transition">
-                        <option disabled selected>Choose Role</option>
-                        <option value="responder">Responder</option>
+               focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-white shadow-sm transition
+               {{ $user->user_type !== 'admin' ? 'bg-gray-200 pointer-events-none text-gray-600' : '' }}">
+                        <option disabled {{ $user->user_type !== 'admin' ? '' : 'selected' }}>Choose Role</option>
+                        <option value="responder" {{ $user->user_type !== 'admin' ? 'selected' : '' }}>Responder</option>
                         <option value="operation-officer">Operation Officer</option>
                         <option value="nurse-chief">Nurse Chief</option>
                     </select>
+
                     @error('user_type')
+                    <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Agency -->
+                <div>
+                    <label class="block text-gray-800 mb-1 font-[Poppins]">Agency</label>
+                    <select name="agency_id" id="agencySelect"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-[13px] font-[Roboto]
+               focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-white shadow-sm transition
+               {{ $user->user_type !== 'admin' ? 'bg-gray-200 pointer-events-none text-gray-600' : '' }}">
+                        <option disabled>Choose Agency</option>
+                        @forelse ($agencies as $agency)
+                        <option value="{{ $agency->id }}"
+                            data-type="{{ strtolower($agency->agencyTypes) }}"
+                            {{ $user->user_type !== 'admin' && $user->agency_id == $agency->id ? 'selected' : '' }}>
+                            {{ $agency->agencyNames }}
+                        </option>
+                        @empty
+                        <option disabled>No agencies available</option>
+                        @endforelse
+                    </select>
+
+                    @error('agency_id')
                     <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
                     @enderror
                 </div>
@@ -223,5 +238,29 @@
             preview.src = URL.createObjectURL(file);
             preview.classList.remove('hidden');
         }
+    });
+
+    const roleSelect = document.querySelector('select[name="user_type"]');
+    const agencySelect = document.getElementById('agencySelect');
+    const allAgencyOptions = Array.from(agencySelect.options).slice(1); // skip 'Choose Agency'
+
+    roleSelect.addEventListener('change', function() {
+        const selectedRole = this.value;
+        agencySelect.innerHTML = '<option disabled selected>Choose Agency</option>'; // reset
+
+        let allowedTypes = [];
+
+        if (selectedRole === 'responder' || selectedRole === 'operation-officer') {
+            allowedTypes = ['cdrrmo', 'bfp', 'bdrrmc'];
+        } else if (selectedRole === 'nurse-chief') {
+            allowedTypes = ['hospital'];
+        }
+
+        // filter options based on allowed types
+        const filteredOptions = allAgencyOptions.filter(option =>
+            allowedTypes.includes(option.dataset.type)
+        );
+
+        filteredOptions.forEach(opt => agencySelect.appendChild(opt.cloneNode(true)));
     });
 </script>

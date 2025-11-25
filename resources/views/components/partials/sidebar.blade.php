@@ -1,105 +1,108 @@
-<aside id="logo-sidebar"
-    class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full 
-         bg-blue-900 border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800"
-    aria-label="Sidebar">
+<div id="drawer-navigation"
+    class="fixed top-0 left-0 z-40 w-64 h-screen p-4 overflow-y-auto bg-blue-800 border-r border-gray-200 -translate-x-full transition-transform duration-300 ease-out dark:bg-gray-800 dark:border-gray-700">
 
-    <div class="h-full px-3 pb-4 overflow-y-auto bg-blue-900">
-
-        <ul class="space-y-2 font-medium">
-
-
-            @if ((auth()->user()->user_type === 'admin'))
-
-
-            <li>
-                <a href="{{ route('admin.dashboard') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Dashboard
-                </a>
-                <a href="{{ route('admin.user', 'All') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    User Management
-                </a>
-                <a href="{{ route('admin.agency') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage Agency
-                </a>
-
-                <a href="{{ route('admin.log-reports', 'All') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Incident Report Logs
-                </a>
-                <a href="{{ route('admin.agency') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage Incident Reports
-                </a>
-                <a href="{{ route('admin.logs', 'All') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage Logs
-                </a>
-            </li>
-            @elseif (auth()->user()->agency->agencyTypes === '' || auth()->user()->agency->agencyTypes === 'BDRRMC' )
-            <li>
-                <a href="{{ route('bfp.dashboard') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('bfp.responders') }}" class="flex items-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]"><span class="material-symbols-outlined mr-2">groups
-                    </span>Manage Personnel Responders
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('bfp.vehicles') }}" class="flex items-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]"><span class="material-symbols-outlined mr-2">fire_truck
-                    </span>Manage Emergency Vehicles
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('bfp.receive-reports') }}" class="flex items-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]"><span class="material-symbols-outlined mr-2">
-                        apartment
-                    </span>Manage Incident Reports
-                </a>
-            </li>
-            <li>
-                <a href="#" class="flex items-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]"><span class="material-symbols-outlined mr-2">inventory
-                    </span>Manage Attendance
-                </a>
-            </li>
-
-            @elseif (auth()->user()->user_type === 'nurse-chief')
-            <li>
-                <a href="{{ route('nurse-chief.dashboard', 'All') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="{{ route('nurse-chief.bed') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage ER Beds
-                </a>
-                <a href="{{ route('nurse-chief.services') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage Treatment Services
-                </a>
-                <a href="{{ route('nurse-chief.admit') }}"
-                    class="flex item-center p-2 hover:bg-blue-50 hover:text-black font-[Poppins] text-white text-[14px]">
-                    <span class="material-symbols-outlined mr-2">dashboard</span>
-                    Manage Admitted Patients
-                </a>
-            </li>
-            @endif
-        </ul>
+    <div class="flex items-center justify-between border-b border-blue-600 pb-4 dark:border-gray-700 mt-16 text-white">
+        <h6 class="text-[16px] font-medium font-[Poppins]">Emergency Response Application</h6>
+        <button type="button" data-drawer-hide="drawer-navigation" class="text-white hover:text-gray-200 transition duration-150" aria-controls="drawer-navigation">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
     </div>
-</aside>
+
+    <ul class="mt-5 space-y-1 font-medium text-white dark:text-gray-400">
+
+        @if (auth()->user()->user_type === 'admin')
+        <li>
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('admin.user', 'All') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">
+                    groups
+                </span>
+                <span class="ml-3 font-[Poppins] text-[12px]">User Management</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('admin.agency') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">
+                    apartment
+                </span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Agency Management</span>
+            </a>
+        </li>
+        <li>
+            <button type="button" class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group"
+                aria-controls="dropdown-example" data-collapse-toggle="dropdown-example">
+                <div class="flex items-center">
+                    <span class="material-symbols-outlined">
+                        e911_emergency
+                    </span>
+                    <span class="ml-3 whitespace-nowrap font-[Poppins] text-[12px]">Incident Report</span>
+                </div>
+                <svg class="w-3 h-3 transition-transform duration-200 transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+                </svg>
+            </button>
+            <ul id="dropdown-example" class="hidden py-2 space-y-1 pl-4 border-l border-blue-600 dark:border-gray-600 ml-2">
+                <li><a href="{{ route('admin.agency-category') }}" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Agency Category</a></li>
+                <li><a href="#" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Barangay Category</a></li>
+            </ul>
+        </li>
+        @elseif (auth()->user()->user_type === 'operation-officer')
+        <li>
+            <a href="{{ route('operation-officer.dashboard') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('operation-officer.responder') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">
+                    groups
+                </span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Responders Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('operation-officer.vehicle') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">
+                    fire_truck
+                </span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Emergency Vehicle Management</span>
+            </a>
+        </li>
+        <li>
+            <button type="button" class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group"
+                aria-controls="dropdown-example" data-collapse-toggle="dropdown-example">
+                <div class="flex items-center">
+                    <span class="material-symbols-outlined">
+                        e911_emergency
+                    </span>
+                    <span class="ml-3 whitespace-nowrap font-[Poppins] text-[12px]">Incident Report</span>
+                </div>
+                <svg class="w-3 h-3 transition-transform duration-200 transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
+                </svg>
+            </button>
+            <ul id="dropdown-example" class="hidden py-2 space-y-1 pl-4 border-l border-blue-600 dark:border-gray-600 ml-2">
+                <li><a href="{{ route('operation-officer.submitted-report') }}" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Submitted Report</a></li>
+                <li><a href="{{ route('operation-officer.receive') }}" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Receive Report</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">
+                    data_check
+                </span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Attendance Management</span>
+            </a>
+        </li>
+        @endif
+    </ul>
+</div>

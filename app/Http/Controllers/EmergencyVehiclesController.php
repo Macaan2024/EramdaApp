@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class EmergencyVehiclesController extends Controller
 {
 
-    public function index(Request $request)
+    public function vehicleIndex(Request $request)
     {
         $vehicles = EmergencyVehicle::where('agency_id', auth()->user()->agency_id)
             ->when($request->search, function ($query) use ($request) {
@@ -20,10 +20,13 @@ class EmergencyVehiclesController extends Controller
                         ->orWhere('plateNumber', 'like', '%' . $request->search . '%');
                 });
             })
-            ->latest()
+            ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('PAGES/BFP_BDRRMC/manage-emergency-vehicles', compact('vehicles'));
+        // Keep the search value when switching pages
+        $vehicles->appends(['search' => $request->search]);
+
+        return view('PAGES/bfp/manage-emergency-vehicle', compact('vehicles'));
     }
 
     public function addVehicles(Request $request)
@@ -48,98 +51,38 @@ class EmergencyVehiclesController extends Controller
             'availabilityStatus' => $request->availabilityStatus,
         ]);
 
-        Log::create([
-            'modified_by' => auth()->user()->firstname . ' ' . auth()->user()->lastname,
-            'interaction_type' => 'Add',
-            'agency_id' => auth()->user()->agency_id,
-            'emergency_vehicle_id' => $vehicle->id, // ✅ only the ID
-        ]);
-
-
         return $vehicle
-            ? redirect()->route('bfp.vehicles')->with('success', 'Successfully Registered Emergency Vehicle.')
+            ? redirect()->back()->with('success', 'Successfully Registered Emergency Vehicle.')
             : redirect()->back()->with('error', 'Register failed, Please try again.')->withInput();
     }
 
-    /**
-     * Show the form for editing the specified emergency vehicle.
-     */
-    public function edit($id)
+    public function updateVehicle(Request $request, $id)
     {
-        $vehicles = EmergencyVehicle::findOrFail($id);
-        return view('PAGES/BFP_BDRRMC/edit-emergency-vehicles', compact('vehicles'));
-    }
+        // Validate inputs
+        $request->validate([
+            'vehicleTypes' => 'required|string',
+            'plateNumber' => 'required|string',
+            'vehicle_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'availabilityStatus' => 'required|string',
+        ]);
 
-    /**
-     * Update the specified emergency vehicle in storage.
-     */
-    public function updateVehicles(Request $request, $id)
-    {
+        // Find the vehicle
         $vehicle = EmergencyVehicle::findOrFail($id);
 
-        $request->validate([
-            'vehicleTypes' => 'required|string|max:255',
-            'plateNumber' => 'required|string|max:255|unique:emergency_vehicles,plateNumber,' . $id,
-            'vehicle_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'availabilityStatus' => 'required|in:Available,Unavailable',
-        ]);
+        // Update fields
+        $vehicle->vehicleTypes = $request->vehicleTypes;
+        $vehicle->plateNumber = $request->plateNumber;
+        $vehicle->availabilityStatus = $request->availabilityStatus;
+        $vehicle->agency_id = auth()->user()->agency_id;
 
-        $data = $request->only([
-            'vehicleTypes',
-            'plateNumber',
-            'availabilityStatus',
-        ]);
-
+        // Handle photo (simple)
         if ($request->hasFile('vehicle_photo')) {
-            $data['vehicle_photo'] = $request->file('vehicle_photo')->store('vehicles', 'public');
+            $path = $request->vehicle_photo->store('vehicles', 'public'); // saves in storage/app/public/vehicles
+            $vehicle->vehicle_photo = $path;
         }
 
-        $updated = $vehicle->update($data);
+        $vehicle->save();
 
-        // Log action
-        Log::create([
-            'modified_by' => auth()->user()->firstname . ' ' . auth()->user()->lastname,
-            'interaction_type' => 'Update',
-            'agency_id' => auth()->user()->agency_id,
-            'emergency_vehicle_id' => $vehicle->id
-
-        ]);
-
-        return $updated
-            ? redirect()->route('bfp.vehicles')->with('success', 'Successfully Updated Emergency Vehicle.')
-            : redirect()->back()->with('error', 'Update failed, please try again.')->withInput();
-    }
-
-    /**
-     * Display the specified emergency vehicle.
-     */
-    public function show($id)
-    {
-        $vehicles = EmergencyVehicle::findOrFail($id);
-        return view('PAGES/BFP_BDRRMC/view-emergency-vehicles', compact('vehicles'));
-    }
-
-    /**
-     * Remove the specified emergency vehicle from storage.
-     */
-    public function destroy($id)
-    {
-        $vehicle = EmergencyVehicle::findOrFail($id);
-
-
-        // Log action before delete
-        Log::create([
-            'modified_by' => auth()->user()->firstname . ' ' . auth()->user()->lastname,
-            'interaction_type' => 'Delete',
-            'agency_id' => auth()->user()->agency_id,
-            'emergency_vehicle_id' => $vehicle->id
-
-        ]);
-
-        $vehicle->delete();
-
-        return $vehicle
-            ? redirect()->back()->with('success', 'Emergency Vehicle successfully deleted.')
-            : redirect()->back()->with('error', 'Delete failed, please try again.');
+        return back()->with('success', 'Vehicle updated successfully!');
     }
 }

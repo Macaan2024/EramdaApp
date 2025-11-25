@@ -21,7 +21,7 @@
       class="w-full max-w-4xl bg-white shadow-2xl rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
 
       <!-- Left side (welcome / benefits panel) -->
-      <div class="bg-gradient-to-br from-indigo-700 to-blue-500 text-white flex flex-col items-center justify-center p-10 font-[Poppins]">
+      <div class="hidden md:block bg-gradient-to-br from-indigo-700 to-blue-500 text-white flex flex-col items-center justify-center p-10 font-[Poppins]">
         <h1 class="text-xl font-semibold mb-2">🚨 Emergency Response Portal</h1>
         <p class="text-[12px] text-indigo-100 text-center mb-6">
           Securely log in to access real-time emergency response tools.

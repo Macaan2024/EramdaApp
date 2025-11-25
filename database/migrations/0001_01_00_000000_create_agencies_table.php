@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('address');
             $table->string('zipcode');
             $table->string('email')->unique();
+            $table->string('contact_number');
+            $table->string('telephone_number')->nullable();
             $table->float('longitude')->nullable();
             $table->float('latitude')->nullable();
             $table->string('availabilityStatus');

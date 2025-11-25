@@ -2,18 +2,107 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agency;
+use App\Models\AgencyReportAction;
 use App\Models\EmergencyRoomBed;
+use App\Models\EmergencyVehicle;
 use App\Models\IndividualErBedList;
+use App\Models\SubmittedReport;
 use App\Models\TreatmentService;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DashboardsController extends Controller
 {
-    public function bfp()
+
+    public function responderIndex()
     {
 
-        return view('PAGES/BFP_BDRRMC/dashboard');
+        $receives = AgencyReportAction::where('nearest_agency_name', auth()->user()->agency->agencyNames)
+            ->where('report_action', 'Accepted')
+            ->get();
+
+        $hospitals = Agency::where('agencyTypes', 'Hospital')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+
+        return view('PAGES/responder/dashboard', compact('receives', 'hospitals'));
     }
+
+
+    public function bfpIndex()
+    {
+        $agencyId = auth()->user()->agency_id;
+        $today = Carbon::today();
+
+        // Submitted Reports for this agency
+        $reportTodayCount = SubmittedReport::whereHas('user', function ($q) use ($agencyId) {
+            $q->where('agency_id', $agencyId);
+        })
+            ->whereDate('created_at', $today)
+            ->count();
+
+        $totalReports = SubmittedReport::whereHas('user', function ($q) use ($agencyId) {
+            $q->where('agency_id', $agencyId);
+        })
+            ->count();
+
+        // Responders
+        $responderCount = User::where('user_type', 'responder')
+            ->where('agency_id', $agencyId)
+            ->count();
+
+        $responderAvailableCount = User::where('user_type', 'responder')
+            ->where('agency_id', $agencyId)
+            ->where('availability_status', 'Available')
+            ->count();
+
+        // Police Cars
+        $policeVehicleCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Police Car')
+            ->count();
+
+        $policeVehicleAvailableCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Police Car')
+            ->where('availabilityStatus', 'Available')
+            ->count();
+
+        // Fire Trucks
+        $fireTruckCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Fire Truck')
+            ->count();
+
+        $fireTruckAvailableCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Fire Truck')
+            ->where('availabilityStatus', 'Available')
+            ->count();
+
+        // Ambulances
+        $ambulanceCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Ambulance')
+            ->count();
+
+        $ambulanceAvailableCount = EmergencyVehicle::where('agency_id', $agencyId)
+            ->where('vehicleTypes', 'Ambulance')
+            ->where('availabilityStatus', 'Available')
+            ->count();
+
+        return view('PAGES/bfp/dashboard', compact(
+            'reportTodayCount',
+            'totalReports',
+            'responderCount',
+            'responderAvailableCount',
+            'policeVehicleCount',
+            'policeVehicleAvailableCount',
+            'fireTruckCount',
+            'fireTruckAvailableCount',
+            'ambulanceCount',
+            'ambulanceAvailableCount'
+        ));
+    }
+
 
     public function adminIndex()
     {

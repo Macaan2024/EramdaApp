@@ -1,7 +1,7 @@
 <x-layout.layout>
     <x-partials.toast-messages />
 
-    <div class="flex flex-col gap-6 mt-10 px-6 lg:px-12">
+    <div class="flex flex-col gap-6 px-6 lg:px-16 my-16">
 
         <!-- AGENCY INFORMATION + MAP -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -19,12 +19,12 @@
                 <!-- Logo & Name -->
                 <div class="flex items-start gap-6">
                     @if($agency->logo)
-                        <img src="{{ asset('storage/' . $agency->logo) }}" alt="Agency Logo"
-                             class="h-28 w-28 object-cover rounded-full border-4 border-blue-100 shadow-sm">
+                    <img src="{{ asset('storage/' . $agency->logo) }}" alt="Agency Logo"
+                        class="h-28 w-28 object-cover rounded-full border-4 border-blue-100 shadow-sm">
                     @else
-                        <div class="h-28 w-28 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full border border-gray-300">
-                            No Logo
-                        </div>
+                    <div class="h-28 w-28 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full border border-gray-300">
+                        No Logo
+                    </div>
                     @endif
                     <div class="flex-1 space-y-2">
                         <h3 class="text-[16px] font-[Poppins] font-bold text-gray-800">
@@ -63,6 +63,15 @@
                     <p class="font-medium text-gray-500">Email:</p>
                     <p class="font-medium text-blue-700 underline hover:text-blue-900 transition">{{ $agency->email }}</p>
 
+                    <p class="font-medium text-gray-500">Contact Number:</p>
+                    <p class="font-medium text-blue-700 underline hover:text-blue-900 transition">{{ $agency->contact_number }}</p>
+
+                    <p class="font-medium text-gray-500">Contact Number:</p>
+                    <p class="font-medium {{ $agency->telephone_number ? 'text-blue-700 underline hover:text-blue-900 transition' : 'text-black' }}">
+                        {{ $agency->telephone_number ?? 'N/A' }}
+                    </p>
+
+
                     <p class="font-medium text-gray-500">Latitude:</p>
                     <p class="font-medium text-gray-800">{{ $agency->latitude ?? 'N/A' }}</p>
 
@@ -77,12 +86,13 @@
                 </div>
             </div>
 
+
             <!-- MAP -->
-            <div class="flex flex-col space-y-4">
-                <h3 class="text-[16px] font-[Poppins] font-semibold text-blue-800 flex items-center gap-2">
-                    <i class="fa-solid fa-location-dot text-blue-600"></i>Agency Location
+            <div class="flex flex-col space-y-4  bg-white rounded-2xl shadow-lg border border-gray-200 px-4 py-5">
+                <h3 class="text-[16px] font-[Poppins] font-semibold">
+                    Agency Location
                 </h3>
-                <div id="map" class="w-full h-[480px] rounded-2xl border border-gray-200 shadow-md"></div>
+                <div id="map" class="w-full h-[480px] rounded-2xl border border-gray-200 shadow-md z-0"></div>
             </div>
         </div>
     </div>
@@ -109,10 +119,13 @@
                 `<img src="/storage/${agency.logo}" class="w-8 h-8 object-contain mb-1" />` :
                 "";
             marker.bindPopup(`
-                <div class="text-center">
+                <div class="flex flex-row gap-2">
+                    <div>
                     ${logoHTML}
-                    <b>${agency.agencyNames}</b><br>
-                    <small>${agency.agencyTypes}</small>
+                    </div>
+                    <div>
+                    ${agency.agencyNames}
+                    </div>
                 </div>
             `).openPopup();
         }

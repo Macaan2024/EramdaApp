@@ -108,6 +108,7 @@
 
                 <!-- Optional Action Button -->
                 <div class="flex justify-end mt-4">
+                    @if ($user->account_status === 'Active')
                     <form action="{{ route('admin.deactivate-user', $user->id) }}" method="POST"
                         onsubmit="return confirm('Are you sure you want to deactivate this user?');">
                         @csrf
@@ -117,6 +118,24 @@
                             Deactivate Account
                         </button>
                     </form>
+                    @else
+                    <form action="{{ route('admin.activate-user', $user->id) }}" method="POST"
+                        onsubmit="return confirm('Are you sure you want to activate this user?');">
+                        @csrf
+                        @method('PUT')
+                        @if ($user->account_status === 'Decline')
+                        <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white text-[13px] font-[Poppins] rounded-lg px-5 py-2 shadow-md transition transform hover:scale-105">
+                            Accept Account
+                        </button>
+                        @else
+                        <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white text-[13px] font-[Poppins] rounded-lg px-5 py-2 shadow-md transition transform hover:scale-105">
+                            Activate Account
+                        </button>
+                        @endif
+                    </form>
+                    @endif
                 </div>
 
             </div>

@@ -16,7 +16,7 @@
 </head>
 
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 font-[Poppins]">
-  <div class="min-h-screen flex items-center justify-center px-4">
+  <div class="min-h-screen flex items-center justify-center px-4 py-4">
     <div
       class="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 max-h-screen overflow-y-auto">
 
@@ -226,6 +226,10 @@
           </div>
         </div>
 
+        <input type="hidden" name="account_status" value="Pending">
+        <input type="hidden" name="availability_status" value="Unavaialble">
+
+
         <!-- Submit -->
         <button type="submit"
           class="w-full mt-4 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg px-5 py-2.5 transition text-[12px]">
@@ -240,4 +244,5 @@
     </div>
   </div>
 </body>
+
 </html>

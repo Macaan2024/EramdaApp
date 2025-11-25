@@ -35,11 +35,11 @@ class AuthenticationController extends Controller
         ]);
 
         $agency = Agency::findOrFail($request->agency_id);
-        if ($request->user_type === 'Nurse Chief' && $agency->agencyTypes !== 'HOSPITALS' ) {
+        if ($request->user_type === 'Nurse Chief' && $agency->agencyTypes !== 'HOSPITAL') {
             return redirect()->back()->with('error', 'Nurse Cheif is for Hospital Agencies only')->withInput();
         }
         // Business rule: Only hospital can have Nurse Chief
-        if ($agency === 'HOSPITALS' && $request->user_type !== 'Nurse Chief') {
+        if ($agency === 'HOSPITAL' && $request->user_type !== 'Nurse Chief') {
             return  redirect()->back()->with('error', 'Hospital is for Nurse Chief Only')->withInput();
         }
 
@@ -60,6 +60,8 @@ class AuthenticationController extends Controller
             'position' => $request->position,
             'photo' => $photoPath,
             'contact_number' => $request->contact_number,
+            'account_status' => $request->account_status,
+            'availability_status' => $request->availability_status
         ]);
 
         // Return with message
@@ -87,30 +89,27 @@ class AuthenticationController extends Controller
                 // Admin override
                 if ($user->user_type === 'admin') {
                     return redirect()->route('admin.dashboard');
-                }elseif ($user->user_type === 'nurse-chief') {
+                } elseif ($user->user_type === 'nurse-chief') {
                     if ($user->account_status === 'Active') {
                         return redirect()->route('nurse-chief.dashboard');
-                    }else {
+                    } else {
+                        return redirect()->back()->with('error', 'User account deactivated');
+                    }
+                } elseif ($user->user_type === 'operation-officer') {
+                    if ($user->account_status === 'Active') {
+                        return redirect()->route('operation-officer.dashboard');
+                    } else {
+                        return redirect()->back()->with('error', 'User account deactivated');
+                    }
+                } elseif ($user->user_type === 'responder') {
+                    if ($user->account_status === 'Active') {
+                        return redirect()->route('responder.dashboard');
+                    } else {
                         return redirect()->back()->with('error', 'User account deactivated');
                     }
                 }
-
-                // Check agency type dynamically
-                $agencyType = $user->agency->agencyTypes ?? null;
-
-                switch ($agencyType) {
-                    case 'BDRRMC':
-                        return redirect()->route('bdrrmc.dashboard');
-                    case 'BFP':
-                        return redirect()->route('bfp.dashboard');
-                    case 'HOSPITALS':
-                        return redirect()->route('nurse-chief.dashboard');
-                    default:
-                        return back()->withErrors(['agencies' => 'No Agencies Assigned Yet']);
-                }
             }
         }
-
         return back()->withErrors([
             'email' => 'Invalid email or password',
         ])->onlyInput('email');

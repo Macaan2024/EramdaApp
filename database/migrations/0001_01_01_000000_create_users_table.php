@@ -13,10 +13,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->foreignId('agency_id')->nullable()->constrained('agencies')->onUpdate('cascade')->onDelete('cascade');
+            $table->string('user_type');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('lastname');
+            $table->string('firstname');
+            $table->enum('gender', ['m', 'f']);
+            $table->string('position');
+            $table->string('photo')->nullable();
+            $table->string('contact_number');
+            $table->string('account_status');
+            $table->string('availability_status');
+            $table->float('last_seen_longitude')->nullable();
+            $table->float('last_seen_latitude')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

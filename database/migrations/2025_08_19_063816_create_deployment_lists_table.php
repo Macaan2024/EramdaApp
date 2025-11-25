@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('deployment_lists', function (Blueprint $table) {
             $table->id();
+            $table->string('from_agency');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('submitted_report_id')->constrained('submitted_reports')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('emergency_vehicle_id')->constrained('emergency_vehicles')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('emergency_vehicle_id')->nullable()->constrained('emergency_vehicles')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamps();
         });
     }

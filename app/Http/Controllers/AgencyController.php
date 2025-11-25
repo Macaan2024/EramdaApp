@@ -14,12 +14,7 @@ class AgencyController extends Controller
         $agencies = Agency::when($request->search, function ($query) use ($request) {
             return $query->whereAny([
                 'agencyNames',
-                'agencyTypes',
-                'address',
                 'email',
-                'longitude',
-                'latitude',
-                'activeStatus'
             ], 'like', '%'  . $request->search . '%');
         })->paginate(10);
 
@@ -27,7 +22,7 @@ class AgencyController extends Controller
         $totalBDRRMC = Agency::where('agencyTypes', 'BDRRMC')->count();
         $totalHOSPITAL = Agency::where('agencyTypes', 'HOSPITAL')->count();
         $totalCDRRMO = Agency::where('agencyTypes', 'CDRRMO')->count();
-        
+
 
         return view('PAGES/admin/manage-agency', compact('agencies', 'totalBFP', 'totalHOSPITAL', 'totalBDRRMC', 'totalCDRRMO'));
     }
@@ -44,6 +39,8 @@ class AgencyController extends Controller
             'barangay' => 'required|string',
             'zipcode' => 'nullable|string',
             'email' => 'required|email|unique:agencies,email',
+            'contact_number' => 'required|string',
+            'telephone_number' => 'required|string',
             'longitude' => 'required|numeric',
             'latitude' => 'required|numeric',
             'availabilityStatus' => 'required|in:Available,Unavailable',
@@ -88,6 +85,8 @@ class AgencyController extends Controller
             'agencyTypes' => 'required|string',
             'agencyNames' => 'required|string',
             'email' => 'required|email',
+            'contact_number' => 'required|string',
+            'telephone_number' => 'required|string',
             'barangay' => 'required|string',
             'zipcode' => 'required|string',
             'address' => 'required|string',
@@ -120,5 +119,40 @@ class AgencyController extends Controller
         $agency->delete();
 
         return redirect()->route('admin.agency')->with('success', 'Agency deleted successfully.');
+    }
+
+    public function searchAgency(Request $request)
+    {
+        // 1. Get the search parameters from the request
+        $query = $request->input('query');
+        $filterType = $request->input('filterType'); // e.g., 'BFP', 'HOSPITAL', etc.
+
+        // 2. Start the query builder for the Agency model
+        $agencies = Agency::query();
+
+        // 3. Apply search query if it exists
+        if ($query) {
+            $agencies->where(function ($q) use ($query) {
+                // Search agency name or email
+                $q->where('agencyNames', 'like', '%' . $query . '%')
+                    ->orWhere('email', 'like', '%' . $query . '%')
+                    ->orWhere('barangay', 'like', '%' . $query . '%');
+            });
+        }
+
+        // 4. Apply filter type if it exists
+        if ($filterType && $filterType !== 'all') { // Assuming 'all' means no filter
+            $agencies->where('agencyTypes', $filterType);
+        }
+
+        // 5. Paginate or get the results
+        $agencies = $agencies->orderBy('created_at', 'desc')->paginate(10);
+
+        // 6. Return the view with the filtered/searched agencies and input values
+        return view('PAGES/admin/manage-agency', [ // Assuming your agency list view is 'admin.agency'
+            'agencies' => $agencies,
+            'searchQuery' => $query,
+            'selectedFilter' => $filterType,
+        ]);
     }
 }

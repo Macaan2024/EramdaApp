@@ -13,12 +13,21 @@ use Illuminate\Support\Facades\Hash;
 class PersonnelRespondersController extends Controller
 {
 
+    public function bfpIndex() {
+
+        $sessionUserAgencyId = auth()->user()->agency_id;
+
+        $responders = User::where('agency_id', $sessionUserAgencyId)->where('user_type', 'responder')->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('PAGES/bfp/manage-personnel-responder', compact('responders'));
+    }
+
     public function index(Request $request, $status = 'All')
     {
 
         $total = 0;
         $sessionUser = auth()->user()->user_type;
-        if ($sessionUser !== 'admin') {
+        if ($sessionUser === 'operation-officer ') {
             $responders = User::where('user_type', 'responders')
                 ->where('agency_id', auth()->user()->agency_id)
                 ->when($request->search, function ($query) use ($request) {

@@ -1,19 +1,23 @@
 <?php
 
+use App\Http\Controllers\AgencyCategoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\DashboardsController;
+use App\Http\Controllers\DeploymentListController;
 use App\Http\Controllers\EmergencyRoomBedController;
 use App\Http\Controllers\EmergencyVehiclesController;
-use App\Http\Controllers\IncidentReportsController;
+use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\IndexController;
 use App\Http\Controllers\IndividualController;
 use App\Http\Controllers\LogsController;
-use App\Http\Controllers\PersonnelRespondersController;
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\ReceiveReportsController;
 use App\Http\Controllers\SubmittedReportController;
 use App\Http\Controllers\TreatmentServicesController;
 use App\Http\Controllers\UserController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -21,8 +25,12 @@ use App\Http\Controllers\UserController;
 |--------------------------------------------------------------------------
 */
 
+Route::controller(IndexController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+});
+
 Route::controller(AuthenticationController::class)->group(function () {
-    Route::view('/', 'PAGES/welcome')->name('/');
+    Route::view('login', 'PAGES/welcome')->name('login');
     Route::get('register', 'register')->name('register');
     Route::post('submit-register', 'submitRegister');
     Route::post('submit-login', 'login');
@@ -32,28 +40,84 @@ Route::controller(AuthenticationController::class)->group(function () {
 
 
 
-Route::prefix('bfp')->name('bfp.')->group(function () {
+Route::prefix('operation-officer')->name('operation-officer.')->middleware(['auth'])->group(function () {
 
-    Route::controller(PersonnelRespondersController::class)->group(function () {
-        Route::get('responders', 'index')->name('responders');
-        Route::get('add-responder', 'register')->name('add-responders'); //done
-        Route::post('submit-responder', 'addResponders')->name('submit-responders'); //done
-        Route::delete('delete-responder/{id}', 'destroy')->name('delete-responders'); //done
-        Route::get('edit-responder/{id}', 'edit')->name('edit-responders'); //done
-        Route::put('update-responder/{id}', 'updateResponders')->name('update-responders'); //done
-        Route::get('search', 'index')->name('search-responders'); //done
-        Route::get('view-responders/{id}', 'show')->name('view-responders'); //done
+    Route::controller(DashboardsController::class)->group(function () {
+        Route::get('dashboard', 'bfpIndex')->name('dashboard');
+    });
+
+    Route::controller(UserController::class)->group(function () {
+        Route::get('responder', 'responderIndex')->name('responder');
+        Route::post('submit-responder', 'userSubmit')->name('submit-responder');
+        Route::put('update/responder/{id}', 'userUpdate')->name('update-responder');
     });
 
     Route::controller(EmergencyVehiclesController::class)->group(function () {
-        Route::get('vehicles', 'index')->name('vehicles'); //done
-        Route::view('vehicles/add-vehicles', 'PAGES/BFP_BDRRMC/add-vehicles')->name('add-vehicles'); //done
-        Route::post('submit-vehicles', 'addVehicles')->name('submit-vehicles'); //done
-        Route::delete('delete-vehicles/{id}', 'destroy')->name('delete-vehicles'); //done
-        Route::get('vehicles/edit-responders/{id}', 'edit')->name('edit-vehicles'); //done
-        Route::put('vehicles/update-responders/{id}', 'updateVehicles')->name('update-vehicles'); //done
-        Route::get('vehicles/search', 'index')->name('search-vehicles'); //done
-        Route::get('vehicles/view-vehicles/{id}', 'show')->name('view-vehicles'); //done
+        Route::get('vehicle', 'vehicleIndex')->name('vehicle');
+        Route::post('submit-vehicle', 'addVehicles')->name('submit-vehicle');
+        Route::put('update/vehicle/{id}', 'updateVehicle')->name('update-vehicle');
+        Route::delete('delete/vehicle/{id}', 'deleteVehicle')->name('delete-vehicle');
+    });
+
+    Route::controller(SubmittedReportController::class)->group(function () {
+        Route::get('submitted-report', 'index')->name('submitted-report');
+        Route::get('report', 'reportIndex')->name('report');
+        Route::view('add-reports/bfp', 'PAGES/bfp/add-report')->name('add-report');
+        Route::post('submit-report', 'submitReports')->name('submit-report');
+        Route::get('report/decline/{id}', 'decline')->name('decline-report');
+        Route::get('report/accept/{id}', 'decline')->name('accept-report');
+        Route::get('report/view/{id}', 'view')->name('view-report');
+    });
+
+    Route::controller(ReceiveReportsController::class)->group(function () {
+        Route::get('receive', 'index')->name('receive');
+    });
+
+    Route::controller(DeploymentListController::class)->group(function () {
+        Route::post('submit-deploy/{reportId}', 'submitDeploy')->name('submit-deploy');
+    });
+
+    Route::controller(AttendanceController::class)->group(function () {
+
+        Route::get('attendance/Time-out/{shift}/{date}', 'attendanceIndexTwo')->name('attendance-time-out-page');
+
+        Route::get('attendance/{shift}/{date}', 'attendanceIndex')->name('attendance');
+        // Record Time-in
+
+        // Show attendance page
+        Route::get('attendance/{status}/{shift}/{date}', 'attendanceIndex')->name('attendance');
+
+        // Time-in
+        Route::post('attendance/time-in', 'attendanceTimeIn')->name('attendance-time-in');
+
+        // Time-out
+        Route::post('attendance/time-out', 'attendanceTimeOut')->name('attendance-time-out');
+
+        // Absent
+        Route::post('attendance/absent', 'attendanceAbsent')->name('attendance-absent');
+
+        // Missed Time-out
+        Route::post('attendance/missed-time-out', 'attendanceMissedTimeOut')->name('attendance-missed-time-out');
+
+        // Cancel any attendance
+        Route::delete('attendance/cancel/{id}', 'cancelAttendance')->name('attendance-cancel');
+    });
+});
+
+
+Route::prefix('responder')->name('responder.')->middleware(['auth'])->group(function () {
+    Route::controller(DashboardsController::class)->group(function () {
+        Route::get('dashboard', 'responderIndex')->name('dashboard');
+    });
+
+    Route::controller(MapController::class)->group(function () {
+        Route::get('nearest-hospital', 'nearestHospital')->name('nearest-hospital');
+        Route::get('/nearest-hospital-beds/{agency_id}', 'getErBeds');
+    });
+
+    Route::controller(IncidentController::class)->group(function () {
+        Route::get('incident/{reportId}/{latitude}/{longitude}', 'incidentIndex')->name('incident');
+        Route::post('incident/submit', 'submitIncident')->name('submit-incident');
     });
 });
 
@@ -69,47 +133,29 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::view('add/agency', 'PAGES/admin/add-agency')->name('add-agency');
         Route::post('submit-agency/agency', 'submitAgency')->name('submit-agency');
         Route::get('edit/agency/{id}', 'editAGency')->name('edit-agency');
-        Route::post('update/agency/{id}', 'updateAgency')->name('update-agency');
+        Route::patch('update/agency/{id}', 'updateAgency')->name('update-agency');
         Route::delete('delete/agency/{id}', 'deleteAgency')->name('delete-agency');
         Route::get('view/agency/{id}', 'viewAgency')->name('view-agency');
-        Route::post('search/agency', 'searchAgency')->name('search-agency');
+        Route::post('search/agency', 'index')->name('search-agency');
     });
 
     // 🔹 Admin User Management
     Route::controller(UserController::class)->group(function () {
         Route::get('user/{status}/{id?}', 'userIndex')->name('user');
+        Route::post('search/user', 'userIndex')->name('search-user');
+        Route::get('search/user', 'decline')->name('decline-user');
         Route::post('submit/user', 'userSubmit')->name('submit-user');
         Route::put('update/user/{id}', 'userUpdate')->name('update-user');
-        Route::post('deactivate/user{id}', 'userDeactivate')->name('deactivate-user');
+        Route::put('deactivate/user/{id}', 'userDeactivate')->name('deactivate-user');
+        Route::put('activate/user/{id}', 'userActivate')->name('activate-user');
         Route::delete('delete/user/{id}', 'userDelete')->name('delete-user');
+        Route::post('accept-user/{id}', 'accept')->name('accept-user');
+        Route::post('decline-user/{id}', 'decline')->name('decline-user');
     });
 
-    Route::controller(LogsController::class)->group(function () {
-        //manage logs
-        Route::get('logs/{status}', 'index')->name('logs');
-
-        // User logs
-        Route::get('logs-users/{status}/{id?}', 'userLogs')->name('logs-users');
-        Route::get('logs-view-users/{id}', 'showUser')->name('logs-view-users');
-        Route::post('logs-add-users', 'addUsers')->name('logs-add-users'); // Store user
-        Route::get('logs-edit-users/{id}', 'editUser')->name('logs-edit-users');
-        Route::put('logs-update-users/{id}', 'updateUser')->name('logs-update-users');
-        Route::delete('logs-delete-users/{id}', 'destroyUser')->name('logs-delete-users');
-        Route::put('logs-restore-users/{id}', 'restoreUser')->name('logs-restore-users');
-
-
-        // Vehicles log Controller
-
-        Route::get('logs-vehicles/{status}/{id?}', 'vehicleLogs')->name('logs-vehicles');
-        Route::get('logs-view-vehicles/{id}', 'showVehicle')->name('logs-view-vehicles');
-        Route::get('logs-vehicles-add', 'vehiclesAdd')->name('logs-vehicles-add');
-        Route::post('logs-add-vehicles', 'addVehicles')->name('logs-add-vehicles');
-        Route::get('logs-edit-vehicles/{id}', 'edit')->name('logs-edit-vehicles');
-        Route::put('logs-update-vehicles/{id}', 'updateVehicles')->name('logs-update-vehicles');
-        Route::delete('logs-delete-vehicles/{id}', 'destroyVehicle')->name('logs-delete-vehicles');
-        Route::put('logs-restore-vehicles/{id}', 'restoreVehicle')->name('logs-restore-vehicles');
+    Route::controller(AgencyCategoryController::class)->group(function () {
+        Route::get('agency-category/{id?}', 'index')->name('agency-category');
     });
-
 
     Route::controller(SubmittedReportController::class)->group(function () {
         Route::get('logs/reports/{status}/{id?}', 'reportLogs')->name('log-reports');

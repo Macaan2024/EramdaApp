@@ -11,6 +11,44 @@ use App\Models\Log;
 class SubmittedReportController extends Controller
 {
 
+    public function index()
+    {
+
+        $receives = AgencyReportAction::with('submittedReport.user')
+            ->whereHas('submittedReport.user', function ($q) {
+                $q->where('agency_id', auth()->user()->agency_id);
+            })
+            ->paginate(10);
+
+        return view('PAGES/bfp/submitted-report', compact('receives'));
+    }
+
+    public function reportIndex()
+    {
+        $user = auth()->user();       // define $user
+        $userAgency = $user->agency;
+
+        // Reports received by this agency
+        if ($userAgency) {
+            $receives = AgencyReportAction::where('nearest_agency_name', $userAgency->agencyNames)
+                ->latest()
+                ->paginate(10);
+        } else {
+            $receives = collect(); // empty collection if no agency
+        }
+
+        // Reports submitted by this user
+        $reports = AgencyReportAction::with('submittedReport')
+            ->whereHas('submittedReport', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->latest()
+            ->paginate(10);
+
+        return view('PAGES/bfp/manage-incident-report', compact('reports', 'receives'));
+    }
+
+
     public function reportLogs(Request $request, $status, $id = null)
     {
         $agencies = Agency::paginate(10);
@@ -135,17 +173,8 @@ class SubmittedReportController extends Controller
                 ]);
             }
 
-            // ✅ Step 5: Log activity
-            Log::create([
-                'interaction_type' => 'Add',
-                'user_id' => auth()->user()->id,
-                'submitted_report_id' => $submittedReport->id,
-            ]);
-
             // ✅ Step 6: Redirect back
-            return redirect()
-                ->route('admin.log-reports', 'All')
-                ->with('success', 'Successfully Submitted Report and sent to nearest agency.');
+            return redirect()->route('operation-officer.report')->with('success', 'Successfully Submitted Report and sent to nearest agency.');
         }
 
         return redirect()

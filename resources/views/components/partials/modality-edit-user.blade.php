@@ -38,7 +38,15 @@
             </div>
             @endif
 
-            <form action="{{ route('admin.update-user', $user->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <form
+                action="{{ auth()->user()->user_type === 'admin' 
+        ? route('admin.update-user', $user->id) 
+        : route('operation-officer.update-responder', $user->id) 
+    }}"
+                method="POST"
+                enctype="multipart/form-data">
+
+
                 @csrf
                 @method('PUT')
 

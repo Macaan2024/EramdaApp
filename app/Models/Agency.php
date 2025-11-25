@@ -24,12 +24,10 @@ class Agency extends Model
         'address',
         'zipcode',
         'email',
-
-
-
+        'contact_number',
+        'telephone_number',
         'longitude',
         'latitude',
-
         'availabilityStatus',
         'logo'
     ];
