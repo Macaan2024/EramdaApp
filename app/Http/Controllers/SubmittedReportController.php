@@ -7,6 +7,8 @@ use App\Models\AgencyReportAction;
 use Illuminate\Http\Request;
 use App\Models\SubmittedReport;
 use App\Models\Log;
+use App\Events\ReportSubmitted;
+
 
 class SubmittedReportController extends Controller
 {
@@ -18,7 +20,7 @@ class SubmittedReportController extends Controller
             ->whereHas('submittedReport.user', function ($q) {
                 $q->where('agency_id', auth()->user()->agency_id);
             })
-            ->paginate(10);
+            ->paginate(20);
 
         return view('PAGES/bfp/submitted-report', compact('receives'));
     }
@@ -105,7 +107,7 @@ class SubmittedReportController extends Controller
 
     public function submitReports(Request $request)
     {
-        // ✅ Step 1: Validate input
+        // Validate input
         $validatedData = $request->validate([
             'user_id' => 'required|exists:users,id',
             'incident_category' => 'required|in:Disaster Incidents,Road Accidents',
@@ -117,7 +119,7 @@ class SubmittedReportController extends Controller
             'barangay_longitude' => 'required|numeric',
             'barangay_latitude' => 'required|numeric',
             'report_status' => 'required|in:Pending',
-            'alarm_level' => 'required|string|max:255',
+            'alarm_level' => 'required|string',
             'fire_truck_request' => 'nullable|numeric|min:0',
             'ambulance_request' => 'nullable|numeric|min:0',
             'police_car_request' => 'nullable|numeric|min:0',
@@ -126,61 +128,103 @@ class SubmittedReportController extends Controller
             'vehicle_type_request' => 'required|string|max:255',
         ]);
 
-        // ✅ Step 2: Save to submitted_reports
+        // Save report
         $submittedReport = SubmittedReport::create($validatedData);
 
-        if ($submittedReport) {
+        if (!$submittedReport) {
+            return back()->with('error', 'Failed to submit report.');
+        }
 
-            // ✅ Step 3: Identify nearest agency
-            $incidentLat = $submittedReport->barangay_latitude;
-            $incidentLng = $submittedReport->barangay_longitude;
+        $incidentLat = $submittedReport->barangay_latitude;
+        $incidentLng = $submittedReport->barangay_longitude;
 
-            // Only select available agencies
+        // ------------------------------------
+        // 🚨 ALARM LEVEL 3: SEND TO ALL AGENCIES except hospitals
+        // ------------------------------------
+        if ($submittedReport->alarm_level == 'Level 3') {
+
             $agencies = Agency::where('availabilityStatus', 'Available')
                 ->where('agencyTypes', '!=', 'HOSPITAL')
                 ->get();
 
-            $nearestAgency = null;
-            $shortestDistance = PHP_FLOAT_MAX;
-
             foreach ($agencies as $agency) {
-                $distance = $this->calculateDistance(
-                    $incidentLat,
-                    $incidentLng,
-                    $agency->latitude,
-                    $agency->longitude
-                );
+                if ($agency->agencyNames == auth()->user()->agency->agencyNames) continue;
 
-                if ($distance < $shortestDistance) {
-                    $shortestDistance = $distance;
-                    $nearestAgency = $agency;
-                }
-            }
-
-            // ✅ Step 4: Create agency_report_actions entry
-            if ($nearestAgency) {
                 AgencyReportAction::create([
                     'submitted_report_id' => $submittedReport->id,
-                    'shortestpath_trigger_num' => $shortestDistance,
+                    'shortestpath_trigger_num' => null,
                     'incident_longitude' => $incidentLng,
                     'incident_latitude' => $incidentLat,
-                    'nearest_agency_name' => $nearestAgency->agencyNames,
-                    'agency_type' => $nearestAgency->agencyTypes,
-                    'agency_longitude' => $nearestAgency->longitude,
-                    'agency_latitude' => $nearestAgency->latitude, // ✅ fixed spelling
+                    'nearest_agency_name' => $agency->agencyNames,
+                    'agency_type' => $agency->agencyTypes,
+                    'agency_longitude' => $agency->longitude,
+                    'agency_latitude' => $agency->latitude,
                     'report_action' => 'Pending',
                     'decline_reason' => '',
                 ]);
             }
 
-            // ✅ Step 6: Redirect back
-            return redirect()->route('operation-officer.report')->with('success', 'Successfully Submitted Report and sent to nearest agency.');
+            return redirect()->route('operation-officer.report')
+                ->with('success', 'Report submitted and forwarded to ALL agencies.');
         }
 
-        return redirect()
-            ->back()
-            ->withInput()
-            ->with('error', 'Failed to submit incident report.');
+        // ------------------------------------
+        // 🚨 ALARM 1 & 2: Find nearest agency based on incident type
+        // ------------------------------------
+        if ($submittedReport->incident_category === 'Road Accidents') {
+            $agencies = Agency::where('availabilityStatus', 'Available')
+                ->whereIn('agencyTypes', ['BDRRMC', 'CDRRMO'])
+                ->get();
+
+
+        }elseif ($submittedReport->incident_category === 'Disaster Incidents' && $submittedReport->incident_type === 'Fire') {
+            $agencies = Agency::where('availabilityStatus', 'Available')->where('agencyTypes', 'BFP')->get();
+
+        } else { // Disaster Incidents
+            $agencies = Agency::where('availabilityStatus', 'Available')
+                ->whereIn('agencyTypes', ['BDRRMC', 'CDRRMO', 'BFP'])
+                ->get();
+        }
+
+        $nearestAgency = null;
+        $shortestDistance = PHP_FLOAT_MAX;
+
+        foreach ($agencies as $agency) {
+            // Skip current user's agency
+            if ($agency->agencyNames === auth()->user()->agency->agencyNames) continue;
+
+            $distance = $this->calculateDistance(
+                $incidentLat,
+                $incidentLng,
+                $agency->latitude,
+                $agency->longitude
+            );
+
+            if ($distance < $shortestDistance) {
+                $shortestDistance = $distance;
+                $nearestAgency = $agency;
+            }
+        }
+
+        if ($nearestAgency) {
+            $agencyAction = AgencyReportAction::create([
+                'submitted_report_id' => $submittedReport->id,
+                'shortestpath_trigger_num' => $shortestDistance,
+                'incident_longitude' => $incidentLng,
+                'incident_latitude' => $incidentLat,
+                'nearest_agency_name' => $nearestAgency->agencyNames,
+                'agency_type' => $nearestAgency->agencyTypes,
+                'agency_longitude' => $nearestAgency->longitude,
+                'agency_latitude' => $nearestAgency->latitude,
+                'report_action' => 'Pending',
+                'decline_reason' => '',
+            ]);
+
+            event(new ReportSubmitted($agencyAction));
+        }
+
+        return redirect()->route('operation-officer.report')
+            ->with('success', 'Report submitted and sent to nearest agency.');
     }
 
     /**

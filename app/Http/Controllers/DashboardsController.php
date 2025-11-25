@@ -109,12 +109,11 @@ class DashboardsController extends Controller
 
         return view('PAGES/admin/dashboard');
     }
-
     public function nurseIndex()
     {
         $sessionUserAgency = auth()->user()->agency_id;
 
-        // Fetch all beds
+        // 1. Fetch all beds
         $beds = EmergencyRoomBed::where('agency_id', $sessionUserAgency)
             ->orderBy('bed_type')
             ->orderBy('room_number')
@@ -122,37 +121,62 @@ class DashboardsController extends Controller
             ->orderBy('availabilityStatus')
             ->get();
 
+        // 2. Calculate Bed Totals
         $privateBedTotals = $beds->where('bed_type', 'private')->where('availabilityStatus', 'Available')->count();
         $icuBedTotals = $beds->where('bed_type', 'icu')->where('availabilityStatus', 'Available')->count();
         $wardenBedTotals = $beds->where('bed_type', 'ward')->where('availabilityStatus', 'Available')->count();
 
-        // Fetch patients
-        $patients = IndividualErBedList::whereHas('emergencyroomerbed', function ($q) use ($sessionUserAgency) {
-            $q->where('agency_id', $sessionUserAgency);
-        })->get();
+        // 3. Fetch patients currently admitted
+        $patients = IndividualErBedList::with('individual', 'emergencyRoomBed')
+            ->whereHas('emergencyRoomBed', function ($query) use ($sessionUserAgency) {
+                $query->where('agency_id', $sessionUserAgency);
+            })
+            ->get();
 
-        // Chart 1: Injury Status
-        $injuryStatusLabels = ['Minor Injury', 'Serious Injury', 'Critical', 'Deceased'];
+        // 4. Map the patients to their individual model
+        // This flattens the list so we can access patient details directly
+        $individuals = $patients->pluck('individual');
+
+        // --- PREPARE CHART DATA ---
+
+        // Chart 1: Injury Status (Correctly used $individuals)
         $injuryStatusData = [
-            $patients->where('injury_status', 'Minor Injury')->count(),
-            $patients->where('injury_status', 'Serious Injury')->count(),
-            $patients->where('injury_status', 'Critical')->count(),
-            $patients->where('injury_status', 'Deceased')->count(),
+            $individuals->where('injury_status', 'Minor Injury')->count(),
+            $individuals->where('injury_status', 'Serious Injury')->count(),
+            $individuals->where('injury_status', 'Critical')->count(),
+            $individuals->where('injury_status', 'Deceased')->count(),
         ];
 
-        // Chart 2: Beds by Type
-        $bedTypeLabels = ['Private', 'ICU', 'Ward'];
-        $bedTypeData = [$privateBedTotals, $icuBedTotals, $wardenBedTotals];
+        // Chart 2: Incident Role (FIXED: Changed $patients to $individuals)
+        $roleData = [
+            $individuals->where('incident_position', 'Driver')->count(),
+            $individuals->where('incident_position', 'Passenger')->count(),
+            $individuals->where('incident_position', 'Pedestrian')->count(),
+            $individuals->where('incident_position', 'Witness')->count(),
+            $individuals->where('incident_position', 'Evacuee')->count(),
+        ];
+
+        // Chart 3: First Aid Applied (FIXED: Changed $patients to $individuals)
+        $firstAidData = [
+            $individuals->where('first_aid_applied', 'Yes')->count(),
+            $individuals->where('first_aid_applied', 'No')->count(),
+        ];
+
+        // Chart 4: Gender (Correctly used $individuals)
+        $genderData = [
+            $individuals->where('individual_sex', 'Male')->count(),
+            $individuals->where('individual_sex', 'Female')->count(),
+        ];
 
         return view('PAGES.hospital.dashboard', compact(
             'beds',
             'privateBedTotals',
             'icuBedTotals',
             'wardenBedTotals',
-            'injuryStatusLabels',
             'injuryStatusData',
-            'bedTypeLabels',
-            'bedTypeData'
+            'roleData',
+            'firstAidData',
+            'genderData'
         ));
     }
 }

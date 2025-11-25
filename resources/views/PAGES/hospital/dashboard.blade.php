@@ -5,8 +5,8 @@
     <div class="p-6 bg-gray-100 min-h-screen font-['Roboto']">
         {{-- Header --}}
         <div class="bg-white p-6 rounded-xl shadow-lg mb-6 flex flex-row gap-4 items-center">
-            <img src="{{ asset('storage/' . auth()->user()->agency->logo) }}"
-                alt="Agency Image" class="w-16 h-16 rounded-full object-cover shadow-md border border-gray-100" />
+            <img src="{{ asset('storage/' . auth()->user()->agency->logo) }}" alt="Agency Image"
+                class="w-16 h-16 rounded-full object-cover shadow-md border border-gray-100" />
             <div class="flex flex-col">
                 <p class="text-lg font-[Poppins] font-bold text-gray-900">
                     {{ auth()->user()->agency->agencyNames }}
@@ -15,62 +15,51 @@
             </div>
         </div>
 
-        {{-- Charts --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            {{-- Injury Status Chart --}}
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h3 class="font-[Poppins] font-semibold text-gray-700 text-[14px] mb-4">Injury Status Monitoring</h3>
-                <canvas id="injuryStatusChart" class="w-full h-64"></canvas>
-            </div>
-
-            {{-- Bed Type Chart --}}
-            <div class="bg-white rounded-xl shadow-md p-6">
-                <h3 class="font-[Poppins] font-semibold text-gray-700 text-[14px] mb-4">Bed Type Overview</h3>
-                <canvas id="bedTypeChart" class="w-full h-64"></canvas>
-            </div>
-        </div>
-
 
         {{-- Bed Summary Cards --}}
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {{-- Private --}}
+            {{-- Private (Emerald) --}}
             <div
-                class="bg-white border-t-4 border-blue-600 rounded-xl shadow-md p-3 sm:p-5 flex flex-col justify-between hover:shadow-lg transition">
+                class="bg-white border-t-4 border-emerald-600 rounded-xl shadow-md p-3 sm:p-5 flex flex-col justify-between hover:shadow-lg transition">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">PRIVATE BEDS</h3>
-                    <span class="material-symbols-outlined text-blue-600 text-2xl sm:text-3xl">hotel</span>
+                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">PRIVATE
+                        BEDS</h3>
+                    <span class="material-symbols-outlined text-emerald-600 text-2xl sm:text-3xl">hotel</span>
                 </div>
-                <p class="text-3xl font-[Poppins] font-medium text-blue-600">{{ $privateBedTotals }}</p>
+                <p class="text-3xl font-[Poppins] font-medium text-emerald-600">{{ $privateBedTotals }}</p>
                 <p class="text-[12px] text-gray-500 font-[Roboto]">Total Available Beds</p>
             </div>
 
-            {{-- ICU --}}
+            {{-- ICU (Red) --}}
             <div
                 class="bg-white border-t-4 border-red-600 rounded-xl shadow-md p-3 sm:p-5 flex flex-col justify-between hover:shadow-lg transition">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">ICU BEDS</h3>
+                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">ICU BEDS
+                    </h3>
                     <span class="material-symbols-outlined text-red-600 text-2xl sm:text-3xl">monitor_heart</span>
                 </div>
                 <p class="text-3xl font-[Poppins] font-medium text-red-600">{{ $icuBedTotals }}</p>
                 <p class="text-[12px] text-gray-500 font-[Roboto]">Total Available Beds</p>
             </div>
 
-            {{-- Ward --}}
+            {{-- Ward (Indigo) --}}
             <div
                 class="bg-white border-t-4 border-indigo-600 rounded-xl shadow-md p-3 sm:p-5 flex flex-col justify-between hover:shadow-lg transition">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">WARD BEDS</h3>
+                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">WARD
+                        BEDS</h3>
                     <span class="material-symbols-outlined text-indigo-600 text-2xl sm:text-3xl">bed</span>
                 </div>
                 <p class="text-3xl font-[Poppins] font-medium text-indigo-600">{{ $wardenBedTotals }}</p>
                 <p class="text-[12px] text-gray-500 font-[Roboto]">Total Available Beds</p>
             </div>
 
-            {{-- Total --}}
+            {{-- Total (Gray) --}}
             <div
                 class="bg-white border-t-4 border-gray-400 rounded-xl shadow-md p-3 sm:p-5 flex flex-col justify-between hover:shadow-lg transition">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">TOTAL BEDS</h3>
+                    <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider">TOTAL
+                        BEDS</h3>
                     <span class="material-symbols-outlined text-gray-600 text-2xl sm:text-3xl">inventory_2</span>
                 </div>
                 <p class="text-3xl font-[Poppins] font-medium text-gray-600">
@@ -80,62 +69,113 @@
             </div>
         </div>
 
+        {{-- ========================================== --}}
+        {{-- STATISTICAL GRAPHS SECTION --}}
+        {{-- ========================================== --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            
+            {{-- 1. Injury Status (Bar) --}}
+            <div class="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
+                <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider mb-2">
+                    Injury Status
+                </h3>
+                <div class="relative w-full h-48">
+                    <canvas id="injuryChart"></canvas>
+                </div>
+            </div>
+
+            {{-- 2. Incident Role (Doughnut) --}}
+            <div class="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
+                <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider mb-2">
+                    Incident Role
+                </h3>
+                <div class="relative w-full h-48">
+                    <canvas id="roleChart"></canvas>
+                </div>
+            </div>
+
+            {{-- 3. First Aid (Pie) --}}
+            <div class="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
+                <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider mb-2">
+                    First Aid Applied
+                </h3>
+                <div class="relative w-full h-48">
+                    <canvas id="firstAidChart"></canvas>
+                </div>
+            </div>
+
+            {{-- 4. Gender (Pie) --}}
+            <div class="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
+                <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider mb-2">
+                    Gender Demographics
+                </h3>
+                <div class="relative w-full h-48">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+
         {{-- BED LIST --}}
         <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             @foreach ($beds as $bed)
-            @php
-            $type = strtoupper($bed->bed_type);
-            $isOccupied = $bed->availabilityStatus === 'Occupied';
+                @php
+                    $type = strtoupper($bed->bed_type);
+                    $isOccupied = $bed->availabilityStatus === 'Occupied';
 
-            switch ($type) {
-            case 'ICU':
-            $color = 'red';
-            $icon = 'monitor_heart';
-            break;
-            case 'PRIVATE':
-            $color = 'yellow';
-            $icon = 'person';
-            break;
-            case 'WARD':
-            $color = 'blue';
-            $icon = 'bed';
-            break;
-            default:
-            $color = 'gray';
-            $icon = 'help';
-            }
-            @endphp
+                    switch ($type) {
+                        case 'ICU':
+                            $color = 'red';
+                            $icon = 'monitor_heart';
+                            break;
+                        case 'PRIVATE':
+                            $color = 'emerald';
+                            $icon = 'person';
+                            break;
+                        case 'WARD':
+                            $color = 'indigo';
+                            $icon = 'bed';
+                            break;
+                        default:
+                            $color = 'gray';
+                            $icon = 'help';
+                    }
+                @endphp
 
-            <div class="bg-white shadow-md rounded-xl p-4 flex flex-col items-center text-center
-                    border-t-4 border-{{ $color }}-500 hover:shadow-xl hover:-translate-y-0.5 transition">
-                <div class="w-12 h-12 flex items-center justify-center rounded-full mb-3
-                        bg-{{ $color }}-100 text-{{ $color }}-600">
-                    <span class="material-symbols-outlined text-3xl">{{ $icon }}</span>
+                <div
+                    class="bg-white shadow-md rounded-xl p-4 flex flex-col items-center text-center
+                        border-t-4 border-{{ $color }}-500 hover:shadow-xl hover:-translate-y-0.5 transition">
+                    <div
+                        class="w-12 h-12 flex items-center justify-center rounded-full mb-3
+                            bg-{{ $color }}-100 text-{{ $color }}-600">
+                        <span class="material-symbols-outlined text-3xl">{{ $icon }}</span>
+                    </div>
+
+                    <p class="font-[Poppins] font-medium text-gray-900 text-[14px] mb-1">Bed {{ $bed->bed_number }}
+                    </p>
+                    <p
+                        class="font-[Poppins] text-[10px] mb-2 px-2 py-0.5 rounded-full
+                            bg-{{ $color }}-100 text-{{ $color }}-700 uppercase">
+                        {{ $type }}</p>
+                    <p class="text-[12px] text-gray-600 font-[Roboto] mb-3">Room {{ $bed->room_number }}</p>
+
+                    <div class="mt-auto w-full border-t border-gray-100 pt-3">
+                        @if ($isOccupied)
+                            <span class="block bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-lg text-[12px]">
+                                OCCUPIED
+                            </span>
+                        @else
+                            <button onclick="openModal({{ $bed->id }})"
+                                class="w-full bg-blue-600 text-white px-3 py-2 rounded-lg text-[12px] font-medium hover:bg-blue-700 transition">
+                                Add Patient
+                            </button>
+                        @endif
+                    </div>
                 </div>
-
-                <p class="font-[Poppins] font-medium text-gray-900 text-[14px] mb-1">Bed {{ $bed->bed_number }}</p>
-                <p class="font-[Poppins] text-[10px] mb-2 px-2 py-0.5 rounded-full
-                        bg-{{ $color }}-100 text-{{ $color }}-700 uppercase">{{ $type }}</p>
-                <p class="text-[12px] text-gray-600 font-[Roboto] mb-3">Room {{ $bed->room_number }}</p>
-
-                <div class="mt-auto w-full border-t border-gray-100 pt-3">
-                    @if ($isOccupied)
-                    <span class="block bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-lg text-[12px]">
-                        OCCUPIED
-                    </span>
-                    @else
-                    <button onclick="openModal({{ $bed->id }})"
-                        class="w-full bg-blue-600 text-white px-3 py-2 rounded-lg text-[12px] font-medium hover:bg-blue-700 transition">
-                        Add Patient
-                    </button>
-                    @endif
-                </div>
-            </div>
             @endforeach
         </div>
     </div>
 
-    {{-- MODAL --}}
+    {{-- MODAL (Unchanged) --}}
     <div id="bedModal"
         class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
         <div
@@ -179,14 +219,20 @@
                 {{-- Name --}}
                 <input type="text" name="individual_name" placeholder="Full Name"
                     value="{{ old('individual_name') }}"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none" required>
-                @error('individual_name') <p class="text-red-500 text-[12px]">{{ $message }}</p> @enderror
+                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                    required>
+                @error('individual_name')
+                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                @enderror
 
                 {{-- Address --}}
                 <input type="text" name="individual_address" placeholder="Address"
                     value="{{ old('individual_address') }}"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none" required>
-                @error('individual_address') <p class="text-red-500 text-[12px]">{{ $message }}</p> @enderror
+                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                    required>
+                @error('individual_address')
+                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                @enderror
 
                 {{-- Sex / Contact --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -216,38 +262,51 @@
 
                     <input type="text" name="individual_contact_number" placeholder="Contact Number"
                         value="{{ old('individual_contact_number') }}"
-                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                        required>
                 </div>
-                @error('individual_contact_number') <p class="text-red-500 text-[12px]">{{ $message }}</p> @enderror
+                @error('individual_contact_number')
+                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                @enderror
                 @error('individual_sex')
-                <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
+                    <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
                 @enderror
 
                 {{-- Injury Status --}}
                 <select name="injury_status"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white" required>
-                    <option value="" disabled {{ old('injury_status') ? '' : 'selected' }}>Select Injury Status</option>
+                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                    required>
+                    <option value="" disabled {{ old('injury_status') ? '' : 'selected' }}>Select Injury Status
+                    </option>
                     <option {{ old('injury_status') === 'Minor Injury' ? 'selected' : '' }}>Minor Injury</option>
                     <option {{ old('injury_status') === 'Serious Injury' ? 'selected' : '' }}>Serious Injury</option>
                     <option {{ old('injury_status') === 'Critical' ? 'selected' : '' }}>Critical</option>
                     <option {{ old('injury_status') === 'Deceased' ? 'selected' : '' }}>Deceased</option>
                 </select>
-                @error('injury_status') <p class="text-red-500 text-[12px]">{{ $message }}</p> @enderror
+                @error('injury_status')
+                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                @enderror
 
                 {{-- Transportation --}}
                 <select name="transportation_type"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white" required>
-                    <option value="" disabled {{ old('transportation_type') ? '' : 'selected' }}>Select Transportation Type</option>
+                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                    required>
+                    <option value="" disabled {{ old('transportation_type') ? '' : 'selected' }}>Select Transportation
+                        Type</option>
                     <option {{ old('transportation_type') === 'Ambulance' ? 'selected' : '' }}>Ambulance</option>
-                    <option {{ old('transportation_type') === 'Private Vehicle' ? 'selected' : '' }}>Private Vehicle</option>
+                    <option {{ old('transportation_type') === 'Private Vehicle' ? 'selected' : '' }}>Private Vehicle
+                    </option>
                     <option {{ old('transportation_type') === 'Walk-in' ? 'selected' : '' }}>Walk-in</option>
-                    <option {{ old('transportation_type') === 'Police Vehicle' ? 'selected' : '' }}>Police Vehicle</option>
+                    <option {{ old('transportation_type') === 'Police Vehicle' ? 'selected' : '' }}>Police Vehicle
+                    </option>
                 </select>
 
                 {{-- Incident Role --}}
                 <select name="incident_position"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white" required>
-                    <option value="" disabled {{ old('incident_position') ? '' : 'selected' }}>Select Role or Position</option>
+                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                    required>
+                    <option value="" disabled {{ old('incident_position') ? '' : 'selected' }}>Select Role or
+                        Position</option>
                     <option {{ old('incident_position') === 'Driver' ? 'selected' : '' }}>Driver</option>
                     <option {{ old('incident_position') === 'Passenger' ? 'selected' : '' }}>Passenger</option>
                     <option {{ old('incident_position') === 'Pedestrian' ? 'selected' : '' }}>Pedestrian</option>
@@ -256,7 +315,8 @@
                 </select>
 
                 {{-- First Aid --}}
-                <div class="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-[14px]">
+                <div
+                    class="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-[14px]">
                     <label class="text-gray-700 font-[Roboto] font-medium">First Aid Applied?</label>
                     <div class="flex gap-6">
                         <label class="flex items-center gap-1.5">
@@ -288,45 +348,10 @@
     </div>
 
 
- {{-- Chart.js --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const injuryStatusCtx = document.getElementById('injuryStatusChart').getContext('2d');
-new Chart(injuryStatusCtx, {
-    type: 'bar',
-    data: {
-        labels: @json($injuryStatusLabels),
-        datasets: [{
-            label: 'Number of Patients',
-            data: @json($injuryStatusData),
-            backgroundColor: ['#60A5FA','#F87171','#FBBF24','#6B7280']
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-    }
-});
-
-const bedTypeCtx = document.getElementById('bedTypeChart').getContext('2d');
-new Chart(bedTypeCtx, {
-    type: 'doughnut',
-    data: {
-        labels: @json($bedTypeLabels),
-        datasets: [{
-            data: @json($bedTypeData),
-            backgroundColor: ['#60A5FA','#F87171','#6366F1']
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'bottom' } }
-    }
-});
-</script>
-
     {{-- Scripts --}}
+    {{-- 1. Chart.js CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         const bedsData = @json($beds);
 
@@ -347,19 +372,109 @@ new Chart(bedTypeCtx, {
             document.getElementById('bedModal').classList.add('hidden');
             document.body.style.overflow = '';
         }
-    </script>
 
-    {{-- Auto-open modal if validation failed --}}
-    @if ($errors->any() && old('bed_id'))
-    <script>
+        // --- GRAPH LOGIC ---
         document.addEventListener('DOMContentLoaded', function() {
-            openModal({
-                {
-                    (int) old('bed_id')
+            // Receive data from Controller
+            const injuryData = @json($injuryStatusData);
+            const roleData = @json($roleData);
+            const firstAidData = @json($firstAidData);
+            const genderData = @json($genderData);
+
+            // 1. Injury Chart (Bar)
+            new Chart(document.getElementById('injuryChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Minor', 'Serious', 'Critical', 'Deceased'],
+                    datasets: [{
+                        label: 'Count',
+                        data: injuryData,
+                        backgroundColor: ['#fcd34d', '#f97316', '#ef4444', '#1f2937'], // Yellow, Orange, Red, Dark
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Incident Role (Doughnut)
+            new Chart(document.getElementById('roleChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Driver', 'Passenger', 'Pedestrian', 'Witness', 'Evacuee'],
+                    datasets: [{
+                        data: roleData,
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#6b7280', '#f59e0b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 3. First Aid (Pie)
+            new Chart(document.getElementById('firstAidChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Yes', 'No'],
+                    datasets: [{
+                        data: firstAidData,
+                        backgroundColor: ['#10b981', '#ef4444'], // Green, Red
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10 } }
+                    }
+                }
+            });
+
+            // 4. Gender (Pie)
+            new Chart(document.getElementById('genderChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Male', 'Female'],
+                    datasets: [{
+                        data: genderData,
+                        backgroundColor: ['#3b82f6', '#ec4899'], // Blue, Pink
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10 } }
+                    }
                 }
             });
         });
     </script>
+
+    {{-- Auto-open modal if validation failed --}}
+    @if ($errors->any() && old('bed_id'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                openModal({{ (int) old('bed_id') }});
+            });
+        </script>
     @endif
 
     {{-- Fade-in animation --}}

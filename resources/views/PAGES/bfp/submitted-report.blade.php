@@ -1,7 +1,11 @@
 <x-layout.layout>
     <x-partials.toast-messages />
     <!-- 🧾 Receive Reports Table -->
-    <h6 class="font-[Poppins] text-[15px] mb-3 text-gray-700">Receive Reports</h6>
+
+    <div class="flex flex-row justify-between item-center mb-3">
+        <h6 class="font-[Poppins] text-[15px] text-gray-700">Submitted Reports</h6>
+        <a class="bg-blue-700 text-white py-1 px-4 rounded-sm" href="{{ route('operation-officer.add-report') }}">Submit Report</a>
+    </div>
 
     <div class="relative overflow-x-auto shadow-lg sm:rounded-lg border border-gray-200 mb-8">
         <table class="w-full text-[13px] font-[Roboto] text-gray-700">
@@ -74,6 +78,9 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="mt-4 flex justify-center">
+        {{ $receives->appends(request()->query())->links('vendor.pagination.tailwind') }}
     </div>
     <x-partials.stack-js />
 </x-layout.layout>

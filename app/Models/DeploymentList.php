@@ -19,7 +19,7 @@ class DeploymentList extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function submittedReport()
@@ -29,6 +29,6 @@ class DeploymentList extends Model
 
       public function emergencyVehicle()
     {
-        return $this->belongsTo(emergencyVehicle::class, 'emergency_vehicle_id', 'id');
+        return $this->belongsTo(EmergencyVehicle::class, 'emergency_vehicle_id', 'id');
     }
 }

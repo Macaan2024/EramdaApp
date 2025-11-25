@@ -21,7 +21,7 @@ class IndividualErBedList extends Model
         return $this->belongsTo(Individual::class, 'individual_id', 'id');
     }
 
-    public function emergencyRoomErBed()
+    public function emergencyRoomBed()
     {
         return $this->belongsTo(EmergencyRoomBed::class, 'emergency_room_bed_id', 'id');
     }

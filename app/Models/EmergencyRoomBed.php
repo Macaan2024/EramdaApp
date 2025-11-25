@@ -19,4 +19,9 @@ class EmergencyRoomBed extends Model
         'bed_number',
         'availabilityStatus',
     ];
+
+    public function emergencyRoomBed()
+    {
+        return $this->belongsTo(EmergencyRoomBed::class, 'emergency_room_bed_id', 'id');
+    }
 }

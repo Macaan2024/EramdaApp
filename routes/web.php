@@ -183,6 +183,6 @@ Route::prefix('nurse-chief')->name('nurse-chief.')->middleware('nurse-chief')->g
     Route::controller(IndividualController::class)->group(function () {
         Route::get('admit', 'index')->name('admit');
         Route::post('submit/admit', 'submitIndividual')->name('submit-admit');
-        Route::patch('patient-release/{id}', 'releasePatient')->name('nurse-chief.release-patient');
+        Route::patch('patient-release/{id}', 'releasePatient')->name('release-patient');
     });
 });

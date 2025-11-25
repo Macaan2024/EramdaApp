@@ -96,11 +96,37 @@
             </ul>
         </li>
         <li>
-            <a href="#" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+            <a href="{{ route('operation-officer.attendance', ['shift' => 'Morning', 'date' => date('Y-m-d')]) }}"
+                class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
                 <span class="material-symbols-outlined">
                     data_check
                 </span>
                 <span class="ml-3 font-[Poppins] text-[12px]">Attendance Management</span>
+            </a>
+        </li>
+        @elseif (auth()->user()->user_type === 'nurse-chief')
+        <li>
+            <a href="{{ route('nurse-chief.dashboard') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('nurse-chief.bed') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">bed</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">ER Bed Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('nurse-chief.services') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">syringe</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Treatment Services Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('nurse-chief.admit') }}" class="flex items-center p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-150 group">
+                <span class="material-symbols-outlined">personal_injury</span>
+                <span class="ml-3 font-[Poppins] text-[12px]">Patient Management</span>
             </a>
         </li>
         @endif

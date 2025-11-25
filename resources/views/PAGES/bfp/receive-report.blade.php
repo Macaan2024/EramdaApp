@@ -76,4 +76,6 @@
         </table>
     </div>
     <x-partials.stack-js />
+
+    
 </x-layout.layout>

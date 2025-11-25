@@ -25,9 +25,9 @@ class DeploymentListController extends Controller
         if ($request->filled('vehicles')) {
             foreach ($request->vehicles as $vehicleId) {
                 DeploymentList::create([
-                    'user_id' => auth()->id(),
                     'submitted_report_id' => $reportId,
                     'emergency_vehicle_id' => $vehicleId,
+                    'from_agency' => auth()->user()->agency->agencyNames
                 ]);
 
                 // Optional: mark vehicle as unavailable
@@ -42,6 +42,8 @@ class DeploymentListController extends Controller
                     'user_id' => $responderId,
                     'submitted_report_id' => $reportId,
                     'emergency_vehicle_id' => null, // responders do not need vehicle
+                    'from_agency' => auth()->user()->agency->agencyNames
+
                 ]);
 
                 // Optional: mark responder as unavailable

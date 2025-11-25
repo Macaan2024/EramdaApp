@@ -125,11 +125,144 @@
                 </div>
             </div>
 
-             <!-- Report details -->
+            @php
+            $deployments = \App\Models\DeploymentList::where('submitted_report_id', $report->submitted_report_id)->get();
+            @endphp
+
+
             <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
                 <h4 class="text-sm font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4">
                     Deployment Information
                 </h4>
+
+                <h4 class="text-sm font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+                    Responder Deploy
+                </h4>
+
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200 mb-6">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    No
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Image
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Name
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Gender
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Position
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Contact Number
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Timestamp
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($deployments as $deployment)
+                            @if ($deployment->user_id !== null)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <img src="{{ asset('storage/' . $deployment->user->photo) }}"
+                                        alt=""
+                                        class="h-8 w-8 object-cover rounded bg-gray-200">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ $deployment->user->firstname }} {{ $deployment->user->lastname }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $deployment->user->gender }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $deployment->user->position }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $deployment->user->contact_number }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $deployment->created_at->timezone('Asia/Manila')->format('F d Y, h:i A') }}
+                                </td>
+                            </tr>
+                            @endif
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No responders deployed.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <h4 class="text-sm font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4">
+                    Emergency Vehicle Deploy
+                </h4>
+
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    No
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Image
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Vehicle Type
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Plate Number
+                                </th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Timestamp
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse ($deployments as $deployment)
+                            @if ($deployment->emergency_vehicle_id !== null)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $loop->iteration }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <img src="{{ asset('storage/' . $deployment->emergencyVehicle->vehicle_photo) }}"
+                                        alt=""
+                                        class="h-8 w-8 object-cover rounded bg-gray-200">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ $deployment->emergencyVehicle->vehicleTypes ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $deployment->emergencyVehicle->plateNumber ?? 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $deployment->created_at->timezone('Asia/Manila')->format('F d Y, h:i A') }}
+                                </td>
+                            </tr>
+                            @endif
+                            @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No emergency vehicles deployed.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

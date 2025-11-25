@@ -1,16 +1,13 @@
-<!-- OPEN BUTTON -->
 <button data-modal-target="deploy-modal-{{ $report->id }}" data-modal-toggle="deploy-modal-{{ $report->id }}"
     class="bg-gray-600 py-1 px-3 rounded-sm text-white">
     Accept
 </button>
-<!-- DEPLOY MODAL -->
 <div id="deploy-modal-{{ $report->id }}" tabindex="-1" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full md:inset-0 max-h-full">
 
     <div class="relative p-4 w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-xl shadow-2xl p-6 border border-gray-100">
 
-            <!-- HEADER -->
             <div class="flex items-center justify-between border-b pb-4 mb-4">
                 <h3 class="text-xl font-extrabold text-blue-700">Units Deployment</h3>
 
@@ -25,7 +22,6 @@
                 </button>
             </div>
 
-            <!-- BODY -->
             <div class="py-2 space-y-6">
 
                 {{-- REQUESTED UNITS SUMMARY --}}
@@ -129,7 +125,6 @@
                         @endforeach
                     </div>
 
-                    <!-- SUBMIT BUTTON -->
                     <div class="flex justify-end mt-4 pt-4 border-t">
                         <button type="submit"
                             class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
@@ -149,107 +144,199 @@
 </div>
 
 
-    <!-- ============ PER MODAL JAVASCRIPT LOGIC (VERY IMPORTANT) ============ -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const modalId = "{{ $report->id }}";
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
 
-            const vehicleCheckboxes = document.querySelectorAll(`.vehicle-checkbox-${modalId}`);
-            const responderCheckboxes = document.querySelectorAll(`.responder-checkbox-${modalId}`);
+<style>
+    .map-container {
+        height: 400px;
+        width: 100%;
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
 
-            const vehicleTotal = document.getElementById(`total-vehicles-selected-${modalId}`);
-            const responderTotal = document.getElementById(`total-responders-selected-${modalId}`);
-            const noVehiclesMsg = document.getElementById(`no-vehicles-msg-${modalId}`);
+    .pulse-wrapper {
+        position: relative;
+        width: 36px;
+        height: 36px;
+    }
 
-            const requests = {
-                "Police Car": {
-                    {
-                        $report - > submittedReport - > police_car_request ?? 0
+    .pulse-ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 36px;
+        height: 36px;
+        margin-left: -18px;
+        margin-top: -18px;
+        border-radius: 50%;
+        background: rgba(255, 0, 0, 0.25);
+        animation: pulseRing 1.8s infinite ease-out;
+    }
+
+    .pulse-core {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        margin-top: -8px;
+        border-radius: 50%;
+        background: #dc2626;
+        border: 2px solid #fff;
+        z-index: 2;
+        animation: coreBounce 1.8s infinite ease;
+    }
+
+    @keyframes pulseRing {
+        0% {
+            transform: scale(0.7);
+            opacity: 0.9;
+        }
+
+        60% {
+            transform: scale(1.7);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(1.7);
+            opacity: 0;
+        }
+    }
+
+    @keyframes coreBounce {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.15);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .travel-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        color: white;
+        background: #2563eb;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-weight: 600;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 350ms ease, transform 350ms ease;
+        z-index: 9999;
+    }
+
+    .travel-time.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modalId = "{{ $report->id }}";
+
+        const vehicleCheckboxes = document.querySelectorAll(`.vehicle-checkbox-${modalId}`);
+        const responderCheckboxes = document.querySelectorAll(`.responder-checkbox-${modalId}`);
+
+        const vehicleTotal = document.getElementById(`total-vehicles-selected-${modalId}`);
+        const responderTotal = document.getElementById(`total-responders-selected-${modalId}`);
+        const noVehiclesMsg = document.getElementById(`no-vehicles-msg-${modalId}`);
+
+        // FIX: Ensure clean integer values are output for the JavaScript object
+        const requests = {
+            "Police Car": parseInt("{{ $report->submittedReport->police_car_request ?? 0 }}"),
+            "Fire Truck": parseInt("{{ $report->submittedReport->fire_truck_request ?? 0 }}"),
+            "Ambulance": parseInt("{{ $report->submittedReport->ambulance_request ?? 0 }}"),
+        };
+
+        // Group vehicles by type
+        const grouped = {
+            "Police Car": [],
+            "Fire Truck": [],
+            "Ambulance": []
+        };
+
+        vehicleCheckboxes.forEach(cb => {
+            let type = cb.dataset.type;
+            if (grouped[type]) grouped[type].push(cb);
+        });
+
+        // CHECK IF NO AVAILABLE VEHICLES
+        let unavailableTypes = [];
+        for (let type in grouped) {
+            // Check if a request was made for this vehicle type AND there are no available vehicles
+            if (requests[type] > 0) {
+                const available = grouped[type].filter(v => v.dataset.status !== "Unavailable");
+                if (available.length === 0) {
+                    unavailableTypes.push(type);
+                }
+            }
+        }
+
+        if (unavailableTypes.length > 0) {
+            noVehiclesMsg.classList.remove("hidden");
+            noVehiclesMsg.textContent = "No available vehicles for: " + unavailableTypes.join(", ");
+        }
+
+        // LIMIT SELECTION PER VEHICLE TYPE
+        function enforceVehicleRules() {
+            let total = 0;
+
+            for (let type in grouped) {
+                const req = requests[type];
+                const list = grouped[type];
+
+                const checked = list.filter(v => v.checked);
+                total += checked.length;
+
+                list.forEach(v => {
+                    if (v.dataset.status === "Unavailable") {
+                        // Keep unavailable vehicles disabled
+                        v.disabled = true;
+                    } else if (!v.checked && checked.length >= req) {
+                        // Disable available vehicles if the requested limit is reached
+                        v.disabled = true;
+                    } else {
+                        // Enable available vehicles if the limit is not reached
+                        v.disabled = false;
                     }
-                },
-                "Fire Truck": {
-                    {
-                        $report - > submittedReport - > fire_truck_request ?? 0
-                    }
-                },
-                "Ambulance": {
-                    {
-                        $report - > submittedReport - > ambulance_request ?? 0
-                    }
-                },
-            };
+                });
+            }
 
-            // Group vehicles by type
-            const grouped = {
-                "Police Car": [],
-                "Fire Truck": [],
-                "Ambulance": []
-            };
+            vehicleTotal.textContent = total;
+        }
 
-            vehicleCheckboxes.forEach(cb => {
-                let type = cb.dataset.type;
-                if (grouped[type]) grouped[type].push(cb);
+        vehicleCheckboxes.forEach(cb => cb.addEventListener("change", enforceVehicleRules));
+        enforceVehicleRules();
+
+        // RESPONDERS – disable if unavailable
+        function enforceResponderRules() {
+            let total = 0;
+
+            responderCheckboxes.forEach(cb => {
+                if (cb.dataset.status === "Unavailable") {
+                    cb.disabled = true;
+                }
+                if (cb.checked) total++;
             });
 
-            // CHECK IF NO AVAILABLE VEHICLES
-            let unavailableTypes = [];
-            for (let type in grouped) {
-                if (requests[type] > 0) {
-                    const available = grouped[type].filter(v => v.dataset.status !== "Unavailable");
-                    if (available.length === 0) {
-                        unavailableTypes.push(type);
-                    }
-                }
-            }
+            responderTotal.textContent = total;
+        }
 
-            if (unavailableTypes.length > 0) {
-                noVehiclesMsg.classList.remove("hidden");
-                noVehiclesMsg.textContent = "No available vehicles for: " + unavailableTypes.join(", ");
-            }
-
-            // LIMIT SELECTION PER VEHICLE TYPE
-            function enforceVehicleRules() {
-                let total = 0;
-
-                for (let type in grouped) {
-                    const req = requests[type];
-                    const list = grouped[type];
-
-                    const checked = list.filter(v => v.checked);
-                    total += checked.length;
-
-                    list.forEach(v => {
-                        if (!v.checked && checked.length >= req) {
-                            v.disabled = true;
-                        } else if (v.dataset.status === "Unavailable") {
-                            v.disabled = true;
-                        } else {
-                            v.disabled = false;
-                        }
-                    });
-                }
-
-                vehicleTotal.textContent = total;
-            }
-
-            vehicleCheckboxes.forEach(cb => cb.addEventListener("change", enforceVehicleRules));
-            enforceVehicleRules();
-
-            // RESPONDERS – disable if unavailable
-            function enforceResponderRules() {
-                let total = 0;
-
-                responderCheckboxes.forEach(cb => {
-                    if (cb.dataset.status === "Unavailable") {
-                        cb.disabled = true;
-                    }
-                    if (cb.checked) total++;
-                });
-
-                responderTotal.textContent = total;
-            }
-
-            responderCheckboxes.forEach(cb => cb.addEventListener("change", enforceResponderRules));
-            enforceResponderRules();
-        });
-    </script>
+        responderCheckboxes.forEach(cb => cb.addEventListener("change", enforceResponderRules));
+        enforceResponderRules();
+    });
+</script>

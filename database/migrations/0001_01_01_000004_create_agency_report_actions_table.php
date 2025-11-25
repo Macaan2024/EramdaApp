@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('agency_report_actions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('submitted_report_id')->constrained('submitted_reports')->onDelete('cascade')->onUpdate('cascade');
-            $table->string('shortestpath_trigger_num');
+            $table->string('shortestpath_trigger_num')->nullable();
             $table->float('incident_longitude');
             $table->float('incident_latitude');
             $table->string('nearest_agency_name');
