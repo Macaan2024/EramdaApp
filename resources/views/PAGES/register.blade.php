@@ -102,8 +102,8 @@
               class="w-full rounded-lg border {{ $errors->has('user_type') ? 'border-red-500 bg-red-50' : 'border-gray-300' }} 
                focus:ring-indigo-500 focus:border-indigo-500 text-[12px]">
               <option value="">Choose Role</option>
-              <option value="Operation Officer" {{ old('user_type') == 'Operation Officer' ? 'selected' : '' }}>Operation Officer</option>
-              <option value="Nurse Chief" {{ old('user_type') == 'Nurse Chief' ? 'selected' : '' }}>Nurse Chief</option>
+              <option value="operation-officer" {{ old('user_type') == 'Operation Officer' ? 'selected' : '' }}>Operation Officer</option>
+              <option value="nurse-chief" {{ old('user_type') == 'Nurse Chief' ? 'selected' : '' }}>Nurse Chief</option>
             </select>
             @error('user_type')
             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -155,6 +155,7 @@
             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
             @enderror
           </div>
+
 
           <!-- Firstname -->
           <div>

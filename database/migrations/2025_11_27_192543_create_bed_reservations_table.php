@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('individual_er_bed_lists', function (Blueprint $table) {
+        Schema::create('bed_reservations', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('submitted_report_id')->constrained('submitted_reports')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('agency_id')->constrained('agencies')->onUpdate('cascade')->onDelete('cascade');
-            $table->foreignId('individual_id')->constrained('individuals')->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('emergency_room_bed_id')->constrained('emergency_room_beds')->onUpdate('cascade')->onDelete('cascade');
-            $table->string('admit_status');
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->strig('request_status');
             $table->timestamps();
         });
     }
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('individual_er_bed_lists');
+        Schema::dropIfExists('bed_reservations');
     }
 };

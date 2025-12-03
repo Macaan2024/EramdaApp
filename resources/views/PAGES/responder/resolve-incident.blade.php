@@ -26,11 +26,11 @@
                 </p>
             </header>
 
-            {{-- Blade Form --}}
+
             <form action="{{ route('responder.submit-incident') }}" method="POST" class="space-y-8">
                 @csrf
 
-                <input type="hidden" name="submitted_report_id" value="{{ $reportId }}">
+                <input type="hidden" name="submitted_report_id" value="{{ $report->submittedReport->id }}">
                 <!-- 1. Incident Basics & Status -->
                 <div class="bg-indigo-50 p-6 rounded-lg shadow-inner">
                     <h2 class="text-xl font-semibold mb-4 text-indigo-700">Incident Basics & Status</h2>
@@ -179,6 +179,8 @@
                     </div>
                 </div>
 
+                @if ($report->submittedReport->incident_category === 'Road Accidents')
+
                 <!-- 4. Road & Environmental Conditions -->
                 <div class="bg-white p-6 rounded-lg shadow-md border">
                     <h2 class="text-xl font-semibold mb-4 text-gray-800">Road & Environmental Conditions</h2>
@@ -285,20 +287,21 @@
                         </div>
                     </div>
                 </div>
+                @endif
 
-                <!-- 5. Reporting and Investigation -->
+                <!-- 5. $reng and Investigation -->
                 <div class="bg-indigo-50 p-6 rounded-lg shadow-inner">
                     <h2 class="text-xl font-semibold mb-4 text-indigo-700">Reporting & Investigation</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                         <div>
                             <label for="reported_by" class="block text-sm font-medium text-gray-700">Reported By *</label>
-                            <input type="text" id="reported_by" name="reported_by" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name or Agency ID">
+                            <input type="text" id="reported_by" name="reported_by" value="{{ auth()->user()->firstname }} {{ auth()->user()->lastname }}" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name or Agency ID">
                         </div>
 
                         <div>
                             <label for="response_lead_agency" class="block text-sm font-medium text-gray-700">Response Lead Agency *</label>
-                            <input type="text" id="response_lead_agency" name="response_lead_agency" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., LTO, Local Police">
+                            <input type="text" id="response_lead_agency" name="response_lead_agency" value="{{ auth()->user()->agency->agencyNames }}" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., LTO, Local Police">
                         </div>
 
                         <div>

@@ -2,15 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AgencyReportAction;
+use App\Models\DeploymentList;
 use App\Models\Incident;
 use Illuminate\Http\Request;
 
 class IncidentController extends Controller
 {
-    public function incidentIndex ($reportId, $latitude, $longitude) {
+    public function incidentIndex($reportId, $latitude, $longitude)
+    {
+
+        $report = AgencyReportAction::whereHas('submittedReport', function ($q) use ($reportId) {
+            $q->where('id', $reportId);
+        })->with('submittedReport')->firstOrFail();
 
 
-        return view('PAGES/responder/resolve-incident', compact('reportId', 'latitude', 'longitude'));
+
+        return view('PAGES/responder/resolve-incident', compact('report', 'latitude', 'longitude'));
     }
 
     public function submitIncident(Request $request)
@@ -56,8 +64,38 @@ class IncidentController extends Controller
             'action_taken' => 'required|string',
         ]);
 
-        Incident::create($validated);
+        $incident = Incident::create($validated);
 
-        return redirect()->back()->with('success', 'Incident report submitted successfully!');
+        $report = AgencyReportAction::where('submitted_report_id', $incident->submitted_report_id)
+            ->where('report_action', 'Accepted')
+            ->latest()
+            ->first();
+
+        if ($report) {
+            $report->submittedReport->update([
+                'report_status' => 'Resolved'
+            ]);
+        }
+
+        $deploys = DeploymentList::where('submitted_report_id', $report->submitted_report_id)->get();
+
+        foreach ($deploys as $deploy) {
+
+            // If deployment has a user
+            if ($deploy->user) {
+                $deploy->user->update([
+                    'availability_status' => 'Available'
+                ]);
+            }
+
+            // If deployment has an emergency vehicle
+            if ($deploy->emergencyVehicle) {
+                $deploy->emergencyVehicle->update([
+                    'availabilityStatus' => 'Available'  // <-- Use correct column name
+                ]);
+            }
+        }
+
+        return redirect()->route('responder.dashboard')->with('success', 'Incident report submitted successfully!');
     }
 }

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\BedReservationController;
 use App\Http\Controllers\DashboardsController;
 use App\Http\Controllers\DeploymentListController;
 use App\Http\Controllers\EmergencyRoomBedController;
@@ -108,6 +109,13 @@ Route::prefix('operation-officer')->name('operation-officer.')->middleware(['aut
 Route::prefix('responder')->name('responder.')->middleware(['auth'])->group(function () {
     Route::controller(DashboardsController::class)->group(function () {
         Route::get('dashboard', 'responderIndex')->name('dashboard');
+    });
+
+    Route::controller(BedReservationController::class)->group(function () {
+        Route::post('submit-reserve', 'store')->name('submit-reserve');
+        Route::put('cancel-reserve/{id}', 'cancelReserve')->name('cancel-reserve');
+        Route::put('accept-reserve/{id}', 'acceptReserve')->name('accept-reserve');
+        Route::put('undo/{id}', 'undo')->name('undo-reserve');
     });
 
     Route::controller(MapController::class)->group(function () {

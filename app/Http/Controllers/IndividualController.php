@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BedReservation;
 use App\Models\EmergencyRoomBed;
 use App\Models\Individual;
 use App\Models\IndividualErBedList;
@@ -13,8 +14,8 @@ class IndividualController extends Controller
     public function index()
     {
 
-        $patientAdmitted = IndividualErBedList::orderBy('admit_status')->get();
 
+        $patientAdmitted = IndividualErBedList::where('agency_id', auth()->user()->agency_id)->orderBy('admit_status')->get();
         $admittedTotal = IndividualErBedList::where('admit_status', 'Admitted')->count();
         $dischargeTotal = IndividualErBedList::where('admit_status', 'Discharge')->count();
 
@@ -74,13 +75,25 @@ class IndividualController extends Controller
         $bed = EmergencyRoomBed::findOrFail($request->bed_id);
         $bed->update(['availabilityStatus' => 'Occupied']);
 
+        $reservation = BedReservation::where('emergency_room_bed_id', $request->bed_id)
+            ->where('request_status', 'Accepted')
+            ->first();
+
+        // If a reservation exists, update it to Done so it stops showing in the table
+        if ($reservation) {
+            $reservation->update([
+                'request_status' => 'Done'
+            ]);
+        }
+
         // Optionally attach to bed
         IndividualErBedList::create([
-            'incident_id' => $request->incident_id ?? null,
+            'agency_id' => auth()->user()->agency_id,
             'individual_id' => $individual->id,
             'emergency_room_bed_id' => $request->bed_id,
             'admit_status' => 'Admitted',
         ]);
+
 
         return redirect()->back()->with('success', 'Patient assigned successfully!');
     }

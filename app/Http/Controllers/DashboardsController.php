@@ -20,8 +20,11 @@ class DashboardsController extends Controller
     {
 
         $receives = AgencyReportAction::where('nearest_agency_name', auth()->user()->agency->agencyNames)
-            ->where('report_action', 'Accepted')
+            ->whereHas('submittedReport', function ($q) {
+                $q->where('report_status', 'Ongoing');
+            })
             ->get();
+
 
         $hospitals = Agency::where('agencyTypes', 'Hospital')
             ->whereNotNull('latitude')

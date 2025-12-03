@@ -47,7 +47,7 @@
                             <th class="px-3 py-2 text-start">Vehicle Type</th>
                             <th class="px-3 py-2 text-start">Plate Number</th>
                             <th class="px-3 py-2 text-start">Availability Status</th>
-                            <th class="px-3 py-2 text-center">Actions</th>
+                            <th class="px-3 py-2 text-start">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -87,7 +87,7 @@
                                 </span>
                             </td>
                             {{-- 6. Actions column --}}
-                            <td class="px-3 py-2 text-center space-x-2 whitespace-nowrap">
+                            <td class="px-3 py-2">
                                 <x-partials.modality-edit-vehicle :vehicle="$vehicle" />
                                 {{-- Delete Button (Form) --}}
                                 <form action="{{ route('operation-officer.delete-vehicle', $vehicle->id) }}"

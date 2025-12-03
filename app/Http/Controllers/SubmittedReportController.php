@@ -12,18 +12,34 @@ use App\Events\ReportSubmitted;
 
 class SubmittedReportController extends Controller
 {
-
-    public function index()
+    public function index(Request $request)
     {
+        $barangay = $request->barangay;
+        $date = $request->date;
 
         $receives = AgencyReportAction::with('submittedReport.user')
             ->whereHas('submittedReport.user', function ($q) {
-                $q->where('agency_id', auth()->user()->agency_id);
+                $q->where('agency_id', auth()->user()->agency_id)->orderBy('incident_category', 'asc')->orderBy('created_at', 'asc');
             })
+
+            // Filter by Barangay
+            ->when($barangay && $barangay !== 'All', function ($q) use ($barangay) {
+                $q->whereHas('submittedReport', function ($sub) use ($barangay) {
+                    $sub->where('barangay_name', $barangay);
+                });
+            })
+
+            // Filter by Date
+            ->when($date, function ($q) use ($date) {
+                $q->whereDate('created_at', $date);
+            })
+
             ->paginate(20);
 
         return view('PAGES/bfp/submitted-report', compact('receives'));
     }
+
+
 
     public function reportIndex()
     {
@@ -175,11 +191,8 @@ class SubmittedReportController extends Controller
             $agencies = Agency::where('availabilityStatus', 'Available')
                 ->whereIn('agencyTypes', ['BDRRMC', 'CDRRMO'])
                 ->get();
-
-
-        }elseif ($submittedReport->incident_category === 'Disaster Incidents' && $submittedReport->incident_type === 'Fire') {
+        } elseif ($submittedReport->incident_category === 'Disaster Incidents' && $submittedReport->incident_type === 'Fire') {
             $agencies = Agency::where('availabilityStatus', 'Available')->where('agencyTypes', 'BFP')->get();
-
         } else { // Disaster Incidents
             $agencies = Agency::where('availabilityStatus', 'Available')
                 ->whereIn('agencyTypes', ['BDRRMC', 'CDRRMO', 'BFP'])

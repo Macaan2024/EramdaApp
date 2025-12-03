@@ -10,7 +10,7 @@ class IndividualErBedList extends Model
     use HasFactory;
 
     protected $fillable = [
-        'incident_id',
+        'agency_id',
         'individual_id',
         'emergency_room_bed_id',
         'admit_status'

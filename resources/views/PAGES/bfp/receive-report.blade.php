@@ -1,8 +1,43 @@
 <x-layout.layout>
     <x-partials.toast-messages />
-    <!-- 🧾 Receive Reports Table -->
-    <h6 class="font-[Poppins] text-[15px] mb-3 text-gray-700">Receive Reports</h6>
 
+    <div class="flex flex-row justify-between items-center mb-3">
+        <h6 class="font-[Poppins] text-[15px] text-gray-700">Receive Reports</h6>
+    </div>
+
+    <form method="GET" action="{{ route('operation-officer.receive') }}"
+        class="flex flex-row justify-between items-center mb-4">
+
+        <select name="barangay" onchange="this.form.submit()"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64">
+
+            <option value="All" {{ request('barangay') == 'All' ? 'selected' : '' }}>
+                Show All Barangay
+            </option>
+
+            @php
+            $barangays = [
+            "Abuno","Acmac-Mariano Badelles Sr.","Bagong Silang","Bonbonon","Bunawan","Buru-un",
+            "Dalipuga","Del Carmen","Digkilaan","Ditucalan","Dulag","Hinaplanon","Hindang",
+            "Kabacsanan","Kalilangan","Kiwalan","Lanipao","Luinab","Mahayahay","Mainit","Mandulog",
+            "Maria Cristina","Pala-o","Panoroganan","Poblacion","Puga-an","Rogongon","San Miguel",
+            "San Roque","Santa Elena","Santa Filomena","Santiago","Santo Rosario","Saray","Suarez",
+            "Tambacan","Tibanga","Tipanoy","Tomas L. Cabili (Tominobo Proper)","Tubod",
+            "Upper Hinaplanon","Upper Tominobo","Ubaldo Laya"
+            ];
+            @endphp
+
+            @foreach ($barangays as $b)
+            <option value="{{ $b }}" {{ request('barangay') == $b ? 'selected' : '' }}>
+                {{ $b }}
+            </option>
+            @endforeach
+        </select>
+
+        <input type="date" name="date" value="{{ request('date') }}"
+            onchange="this.form.submit()"
+            class="px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm">
+    </form>
     <div class="relative overflow-x-auto shadow-lg sm:rounded-lg border border-gray-200 mb-8">
         <table class="w-full text-[13px] font-[Roboto] text-gray-700">
             <thead class="bg-gradient-to-r from-blue-600 to-green-600 text-white font-[Poppins] text-[13px] uppercase">
@@ -13,8 +48,9 @@
                     <th class="px-4 py-3">Barangay</th>
                     <th class="px-4 py-3">Level</th>
                     <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3 text-center">Report Action</th>
-                    <th class="px-4 py-3 text-center">Action</th>
+                    <th class="px-4 py-3">Report Action</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3">Action</th>
                 </tr>
             </thead>
 
@@ -31,6 +67,7 @@
                         'Level 1' => 'bg-yellow-500 text-white',
                         'Level 2' => 'bg-orange-500 text-white',
                         'Level 3' => 'bg-red-600 text-white',
+                        default => 'bg-gray-400 text-white'
                         };
                         @endphp
 
@@ -52,11 +89,14 @@
                             {{ $receive->submittedReport->report_status }}
                         </span>
                     </td>
-                    <td class="text-center">
+                    <td class="px-4 py-3">
                         {{ $receive->report_action }}
                     </td>
-                    <td class="px-1 py-1">
-                        <div class="flex flex-row gap-1 justify-center item-center">
+                    <td class="px-4 py-3">
+                        {{ $receive->created_at->timezone('Asia/Manila')->format('F d Y, g:i A') }}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-row gap-1 item-center">
 
                             @if ($receive->report_action !== 'Accepted')
                             <x-partials.modality-deploy-units :report="$receive" />
@@ -75,7 +115,11 @@
             </tbody>
         </table>
     </div>
+
+    <div class="mt-4 flex justify-center">
+        {{ $receives->appends(request()->query())->links('vendor.pagination.tailwind') }}
+    </div>
+
     <x-partials.stack-js />
 
-    
 </x-layout.layout>

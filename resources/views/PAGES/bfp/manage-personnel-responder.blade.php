@@ -64,10 +64,11 @@
                             <th class="px-3 py-2 text-start">Name</th>
                             <th class="px-3 py-2 text-start">Position</th>
                             <th class="px-3 py-2 text-start">Contact Number</th>
+                            <th class="px-3 py-2 text-start">Email</th>
                             <th class="px-3 py-2 text-start">Gender</th>
                             <th class="px-3 py-2 text-start">Account Status</th>
                             <th class="px-3 py-2 text-start">Availability</th>
-                            <th class="px-3 py-2 text-center">Actions</th>
+                            <th class="px-3 py-2 text-start">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,7 +95,7 @@
                             <td class="px-3 py-2">{{ $responder->position }}</td>
 
                             <td class="px-3 py-2">{{ $responder->contact_number }}</td>
-
+                            <td class="px-3 py-2">{{ $responder->email }}</td>
                             <td class="px-3 py-2">
                                 {{ $responder->gender == 'm' ? 'Male' : ($responder->gender == 'f' ? 'Female' : 'N/A') }}
                             </td>
@@ -122,17 +123,19 @@
                             @php
                             $user = $responder;
                             @endphp
-                            <td class="px-3 py-2 flex flex-row gap-1 justify-center">
-                                <x-partials.modality-view-user :user="$user" />
-                                <x-partials.modality-edit-user :user="$user" :agencies="$agencies" />
-                                <form action="#" method="POST"
-                                    onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="px-3 py-1.5 rounded-sm text-[12px] font-[Poppins] font-medium bg-red-600 text-white hover:bg-red-700 transition">
-                                        Delete
-                                    </button>
-                                </form>
+                            <td class="px-3 py-2">
+                                <div class="flex flex-row item-center gap-1">
+                                    <x-partials.modality-view-user :user="$user" />
+                                    <x-partials.modality-edit-user :user="$user" :agencies="$agencies" />
+                                    <form action="#" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="px-3 py-1.5 rounded-sm text-[12px] font-[Poppins] font-medium bg-red-600 text-white hover:bg-red-700 transition">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         @empty

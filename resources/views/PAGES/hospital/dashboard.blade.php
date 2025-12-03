@@ -73,7 +73,7 @@
         {{-- STATISTICAL GRAPHS SECTION --}}
         {{-- ========================================== --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            
+
             {{-- 1. Injury Status (Bar) --}}
             <div class="bg-white p-4 rounded-xl shadow-md border border-gray-100 flex flex-col">
                 <h3 class="text-gray-700 font-[Poppins] font-semibold text-[12px] uppercase tracking-wider mb-2">
@@ -120,7 +120,9 @@
             @foreach ($beds as $bed)
                 @php
                     $type = strtoupper($bed->bed_type);
+                    // Check statuses
                     $isOccupied = $bed->availabilityStatus === 'Occupied';
+                    $isReserved = $bed->availabilityStatus === 'Reserved' || $bed->availabilityStatus === 'Reserve';
 
                     switch ($type) {
                         case 'ICU':
@@ -155,15 +157,24 @@
                     <p
                         class="font-[Poppins] text-[10px] mb-2 px-2 py-0.5 rounded-full
                             bg-{{ $color }}-100 text-{{ $color }}-700 uppercase">
-                        {{ $type }}</p>
+                        {{ $type }}
+                    </p>
                     <p class="text-[12px] text-gray-600 font-[Roboto] mb-3">Room {{ $bed->room_number }}</p>
 
                     <div class="mt-auto w-full border-t border-gray-100 pt-3">
                         @if ($isOccupied)
-                            <span class="block bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-lg text-[12px]">
+                            <span
+                                class="block bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-lg text-[12px]">
                                 OCCUPIED
                             </span>
+                        @elseif ($isReserved)
+                            {{-- LOGIC: If bed is Reserved, show unclickable badge --}}
+                            <span
+                                class="block bg-orange-100 text-orange-700 font-medium px-3 py-1.5 rounded-lg text-[12px] uppercase cursor-not-allowed">
+                                RESERVED
+                            </span>
                         @else
+                            {{-- Default: Show Add Patient Button --}}
                             <button onclick="openModal({{ $bed->id }})"
                                 class="w-full bg-blue-600 text-white px-3 py-2 rounded-lg text-[12px] font-medium hover:bg-blue-700 transition">
                                 Add Patient
@@ -173,327 +184,562 @@
                 </div>
             @endforeach
         </div>
-    </div>
 
-    {{-- MODAL (Unchanged) --}}
-    <div id="bedModal"
-        class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
-        <div
-            class="bg-white w-full max-w-xl rounded-xl shadow-2xl p-6 sm:p-8 animate-fadeIn relative border border-gray-200 overflow-y-auto max-h-[90vh]">
+        @php
+            $reservations = App\Models\BedReservation::whereHas('emergencyRoomBed')
+                ->where('agency_id', auth()->user()->agency_id)->whereNot('request_status', 'Done')
+                ->latest()
+                ->paginate(10);
+        @endphp
 
-            {{-- Close --}}
-            <button onclick="closeModal()"
-                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition text-2xl">
-                <span class="material-symbols-outlined text-2xl">close</span>
-            </button>
+        {{-- Main Container --}}
+        <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden my-10">
 
-            {{-- Header --}}
-            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
-                <img src="{{ asset('storage/' . auth()->user()->agency->logo) }}"
-                    class="w-14 h-14 rounded-full object-cover border border-gray-300 shadow-sm">
+            {{-- Header Title Section --}}
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center gap-3 bg-white">
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <span class="material-symbols-outlined text-xl">inbox</span>
+                </div>
                 <div>
-                    <h2 class="font-[Poppins] font-bold text-[16px] text-gray-900">Assign Individual to Bed</h2>
-                    <p class="text-[12px] text-gray-500 font-[Roboto]">{{ auth()->user()->agency->agencyNames }}</p>
+                    <h2 class="text-lg font-bold text-gray-800 font-[Poppins]">Agency Request Bed Reservations</h2>
+                    <p class="text-xs text-gray-500 mt-0.5 font-[Roboto]">Manage incoming transfer requests</p>
                 </div>
             </div>
 
-            {{-- Bed Info --}}
-            <div class="mb-6 text-sm text-gray-700 bg-blue-50 rounded-lg p-4 border border-blue-200 shadow-inner">
-                <p class="text-[12px] font-semibold text-blue-800 uppercase mb-1">Selected Bed Details</p>
-                <div class="text-gray-900 font-[Poppins] text-sm">
-                    <p>Bed: <span id="modalBedNumber" class="font-semibold text-blue-800"></span></p>
-                    <p>Type: <span id="modalBedType" class="font-semibold text-blue-800"></span></p>
-                    <p>Room: <span id="modalRoomNumber" class="font-semibold text-blue-800"></span></p>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 font-[Roboto]">
+
+                    {{-- Header Columns --}}
+                    <thead
+                        class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100 font-[Poppins] tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold text-gray-700">No</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Agency</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Responder Name</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Responder Position</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Incident Category</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Type</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Bed Type</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Room</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700">Status</th>
+                            <th class="px-6 py-4 font-semibold text-gray-700 text-center">Action</th>
+                        </tr>
+                    </thead>
+
+                    {{-- Table Body --}}
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                        @forelse ($reservations as $reservation)
+                            <tr class="hover:bg-blue-50/30 transition-colors duration-200 group">
+
+                                {{-- 1. No --}}
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    {{ $loop->iteration }}
+                                </td>
+
+                                {{-- 2. Agency --}}
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-800">
+                                    {{ $reservation->user->agency->agencyNames ?? 'N/A' }}
+                                </td>
+
+                                {{-- 3. Responder Name --}}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold ring-1 ring-indigo-100">
+                                            {{ substr($reservation->user->firstname, 0, 1) }}
+                                        </div>
+                                        <span class="text-gray-700 text-[13px] font-medium">
+                                            {{ $reservation->user->firstname }} {{ $reservation->user->lastname }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                {{-- 4. Responder Position --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-500 text-[13px]">
+                                    {{ $reservation->user->position ?? 'Responder' }}
+                                </td>
+
+                                {{-- 5. Incident Category --}}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                                        {{ $reservation->submittedReport->incident_category }}
+                                    </span>
+                                </td>
+
+                                {{-- 6. Incident Type --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-[13px]">
+                                    {{ $reservation->submittedReport->incident_type }}
+                                </td>
+
+                                {{-- 7. Bed Type --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-[13px]">
+                                    {{ $reservation->emergencyRoomBed->bed_type }}
+                                </td>
+
+                                {{-- 8. Room --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-[13px]">
+                                    {{ $reservation->emergencyRoomBed->room_number }}
+                                </td>
+
+                                {{-- 9. Status --}}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if ($reservation->request_status == 'Accepted')
+                                        <span
+                                            class="text-green-600 font-bold text-xs uppercase tracking-wide">Accepted</span>
+                                    @elseif($reservation->request_status == 'Cancelled')
+                                        <span
+                                            class="text-red-600 font-bold text-xs uppercase tracking-wide">Cancelled</span>
+                                    @else
+                                        <span
+                                            class="text-yellow-600 font-bold text-xs uppercase tracking-wide animate-pulse">Pending</span>
+                                    @endif
+                                </td>
+
+                                {{-- 10. Action --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <div class="flex items-center justify-center gap-2">
+
+                                        @if ($reservation->request_status == 'Pending')
+                                            {{-- ACCEPT BUTTON (FORM SUBMIT) --}}
+                                            {{-- This submits the acceptance, changing bed status to Reserved --}}
+                                            <form action="{{ route('responder.accept-reserve', $reservation->id) }}"
+                                                method="POST">
+                                                @csrf @method('PUT')
+                                                <button type="submit"
+                                                    class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                                                    Accept
+                                                </button>
+                                            </form>
+
+                                            {{-- CANCEL BUTTON (FORM SUBMIT) --}}
+                                            <form action="{{ route('responder.cancel-reserve', $reservation->id) }}"
+                                                method="POST">
+                                                @csrf @method('PUT')
+                                                <button type="submit"
+                                                    class="bg-red-500 text-white px-4 py-1.5 rounded text-xs font-semibold hover:bg-red-600 transition-colors shadow-sm">
+                                                    Cancel
+                                                </button>
+                                            </form>
+
+                                        @elseif($reservation->request_status == 'Accepted')
+
+                                            {{-- ADD PATIENT BUTTON (OPENS MODAL) --}}
+                                            <button onclick="openModal({{ $reservation->emergencyRoomBed->id }})"
+                                                class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                                                Add Patient
+                                            </button>
+
+                                            {{-- UNDO BUTTON (FORM SUBMIT) --}}
+                                            {{-- This reverses the acceptance, freeing the bed back to available --}}
+                                            <form action="{{ route('responder.undo-reserve', $reservation->id) }}"
+                                                method="POST">
+                                                @csrf @method('PUT')
+                                                <button type="submit"
+                                                    class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded text-xs font-semibold hover:bg-gray-300 transition-colors shadow-sm">
+                                                    Undo
+                                                </button>
+                                            </form>
+
+                                        @elseif($reservation->request_status == 'Cancelled')
+                                             {{-- Only Undo for cancelled if needed --}}
+                                            <form action="{{ route('responder.undo-reserve', $reservation->id) }}"
+                                                method="POST">
+                                                @csrf @method('PUT')
+                                                <button type="submit"
+                                                    class="bg-gray-200 text-gray-700 px-4 py-1.5 rounded text-xs font-semibold hover:bg-gray-300 transition-colors shadow-sm">
+                                                    Undo
+                                                </button>
+                                            </form>
+
+                                        @endif
+
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="10" class="px-6 py-12 text-center bg-gray-50/50">
+                                    <div class="flex flex-col items-center justify-center text-gray-400">
+                                        <div class="bg-white p-3 rounded-full shadow-sm mb-3">
+                                            <span class="material-symbols-outlined text-3xl text-gray-300">inbox</span>
+                                        </div>
+                                        <p class="text-sm font-medium text-gray-500">No reservation requests found.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
-            {{-- Form --}}
-            <form action="{{ route('nurse-chief.submit-admit') }}" method="POST" class="space-y-4">
-                @csrf
-                <input type="hidden" name="bed_id" id="modalBedId" value="{{ old('bed_id') }}">
-
-                <p class="font-[Poppins] font-medium text-[14px] text-gray-800 border-b border-gray-100 pb-2 mb-2">
-                    Patient Information
-                </p>
-
-                {{-- Name --}}
-                <input type="text" name="individual_name" placeholder="Full Name"
-                    value="{{ old('individual_name') }}"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
-                    required>
-                @error('individual_name')
-                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
-                @enderror
-
-                {{-- Address --}}
-                <input type="text" name="individual_address" placeholder="Address"
-                    value="{{ old('individual_address') }}"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
-                    required>
-                @error('individual_address')
-                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
-                @enderror
-
-                {{-- Sex / Contact --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label class="text-gray-700 font-medium mb-1 sm:mb-0">Choose Gender:</label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="individual_sex" value="Male"
-                            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                            {{ old('individual_sex') == 'Male' ? 'checked' : '' }} required>
-                        <span class="text-gray-700">Male</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="individual_sex" value="Female"
-                            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                            {{ old('individual_sex') == 'Female' ? 'checked' : '' }} required>
-                        <span class="text-gray-700">Female</span>
-                    </label>
-
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="individual_sex" value="Other"
-                            class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                            {{ old('individual_sex') == 'Other' ? 'checked' : '' }}>
-                        <span class="text-gray-700">Other</span>
-                    </label>
-
-
-                    <input type="text" name="individual_contact_number" placeholder="Contact Number"
-                        value="{{ old('individual_contact_number') }}"
-                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
-                        required>
+            {{-- Pagination --}}
+            @if ($reservations->hasPages())
+                <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    {{ $reservations->links() }}
                 </div>
-                @error('individual_contact_number')
-                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
-                @enderror
-                @error('individual_sex')
-                    <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
-                @enderror
+            @endif
+        </div>
 
-                {{-- Injury Status --}}
-                <select name="injury_status"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
-                    required>
-                    <option value="" disabled {{ old('injury_status') ? '' : 'selected' }}>Select Injury Status
-                    </option>
-                    <option {{ old('injury_status') === 'Minor Injury' ? 'selected' : '' }}>Minor Injury</option>
-                    <option {{ old('injury_status') === 'Serious Injury' ? 'selected' : '' }}>Serious Injury</option>
-                    <option {{ old('injury_status') === 'Critical' ? 'selected' : '' }}>Critical</option>
-                    <option {{ old('injury_status') === 'Deceased' ? 'selected' : '' }}>Deceased</option>
-                </select>
-                @error('injury_status')
-                    <p class="text-red-500 text-[12px]">{{ $message }}</p>
-                @enderror
+        {{-- MODAL (Unchanged) --}}
+        <div id="bedModal"
+            class="hidden fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
+            <div
+                class="bg-white w-full max-w-xl rounded-xl shadow-2xl p-6 sm:p-8 animate-fadeIn relative border border-gray-200 overflow-y-auto max-h-[90vh]">
 
-                {{-- Transportation --}}
-                <select name="transportation_type"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
-                    required>
-                    <option value="" disabled {{ old('transportation_type') ? '' : 'selected' }}>Select Transportation
-                        Type</option>
-                    <option {{ old('transportation_type') === 'Ambulance' ? 'selected' : '' }}>Ambulance</option>
-                    <option {{ old('transportation_type') === 'Private Vehicle' ? 'selected' : '' }}>Private Vehicle
-                    </option>
-                    <option {{ old('transportation_type') === 'Walk-in' ? 'selected' : '' }}>Walk-in</option>
-                    <option {{ old('transportation_type') === 'Police Vehicle' ? 'selected' : '' }}>Police Vehicle
-                    </option>
-                </select>
+                {{-- Close --}}
+                <button onclick="closeModal()"
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition text-2xl">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
 
-                {{-- Incident Role --}}
-                <select name="incident_position"
-                    class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
-                    required>
-                    <option value="" disabled {{ old('incident_position') ? '' : 'selected' }}>Select Role or
-                        Position</option>
-                    <option {{ old('incident_position') === 'Driver' ? 'selected' : '' }}>Driver</option>
-                    <option {{ old('incident_position') === 'Passenger' ? 'selected' : '' }}>Passenger</option>
-                    <option {{ old('incident_position') === 'Pedestrian' ? 'selected' : '' }}>Pedestrian</option>
-                    <option {{ old('incident_position') === 'Witness' ? 'selected' : '' }}>Witness</option>
-                    <option {{ old('incident_position') === 'Evacuee' ? 'selected' : '' }}>Evacuee</option>
-                </select>
-
-                {{-- First Aid --}}
-                <div
-                    class="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-[14px]">
-                    <label class="text-gray-700 font-[Roboto] font-medium">First Aid Applied?</label>
-                    <div class="flex gap-6">
-                        <label class="flex items-center gap-1.5">
-                            <input type="radio" name="first_aid_applied" value="Yes" class="text-blue-600 w-4 h-4"
-                                {{ old('first_aid_applied') === 'Yes' ? 'checked' : '' }} required>
-                            <span>Yes</span>
-                        </label>
-                        <label class="flex items-center gap-1.5">
-                            <input type="radio" name="first_aid_applied" value="No" class="text-blue-600 w-4 h-4"
-                                {{ old('first_aid_applied') === 'No' ? 'checked' : '' }}>
-                            <span>No</span>
-                        </label>
+                {{-- Header --}}
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+                    <img src="{{ asset('storage/' . auth()->user()->agency->logo) }}"
+                        class="w-14 h-14 rounded-full object-cover border border-gray-300 shadow-sm">
+                    <div>
+                        <h2 class="font-[Poppins] font-bold text-[16px] text-gray-900">Assign Individual to Bed</h2>
+                        <p class="text-[12px] text-gray-500 font-[Roboto]">{{ auth()->user()->agency->agencyNames }}
+                        </p>
                     </div>
                 </div>
 
-                {{-- Buttons --}}
-                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100">
-                    <button type="button" onclick="closeModal()"
-                        class="bg-gray-100 text-gray-700 font-[Poppins] px-5 py-2 rounded-lg hover:bg-gray-200 w-full sm:w-auto">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                        class="bg-blue-600 text-white font-[Poppins] px-5 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 w-full sm:w-auto">
-                        Submit
-                    </button>
+                {{-- Bed Info --}}
+                <div
+                    class="mb-6 text-sm text-gray-700 bg-blue-50 rounded-lg p-4 border border-blue-200 shadow-inner">
+                    <p class="text-[12px] font-semibold text-blue-800 uppercase mb-1">Selected Bed Details</p>
+                    <div class="text-gray-900 font-[Poppins] text-sm">
+                        <p>Bed: <span id="modalBedNumber" class="font-semibold text-blue-800"></span></p>
+                        <p>Type: <span id="modalBedType" class="font-semibold text-blue-800"></span></p>
+                        <p>Room: <span id="modalRoomNumber" class="font-semibold text-blue-800"></span></p>
+                    </div>
                 </div>
-            </form>
+
+                {{-- Form --}}
+                <form action="{{ route('nurse-chief.submit-admit') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="bed_id" id="modalBedId" value="{{ old('bed_id') }}">
+
+                    <p class="font-[Poppins] font-medium text-[14px] text-gray-800 border-b border-gray-100 pb-2 mb-2">
+                        Patient Information
+                    </p>
+
+                    {{-- Name --}}
+                    <input type="text" name="individual_name" placeholder="Full Name"
+                        value="{{ old('individual_name') }}"
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                        required>
+                    @error('individual_name')
+                        <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Address --}}
+                    <input type="text" name="individual_address" placeholder="Address"
+                        value="{{ old('individual_address') }}"
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                        required>
+                    @error('individual_address')
+                        <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Sex / Contact --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label class="text-gray-700 font-medium mb-1 sm:mb-0">Choose Gender:</label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="individual_sex" value="Male"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                {{ old('individual_sex') == 'Male' ? 'checked' : '' }} required>
+                            <span class="text-gray-700">Male</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="individual_sex" value="Female"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                {{ old('individual_sex') == 'Female' ? 'checked' : '' }} required>
+                            <span class="text-gray-700">Female</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="individual_sex" value="Other"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                {{ old('individual_sex') == 'Other' ? 'checked' : '' }}>
+                            <span class="text-gray-700">Other</span>
+                        </label>
+
+
+                        <input type="text" name="individual_contact_number" placeholder="Contact Number"
+                            value="{{ old('individual_contact_number') }}"
+                            class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 outline-none"
+                            required>
+                    </div>
+                    @error('individual_contact_number')
+                        <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                    @enderror
+                    @error('individual_sex')
+                        <p class="text-red-500 text-[12px] mt-1">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Injury Status --}}
+                    <select name="injury_status"
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                        required>
+                        <option value="" disabled {{ old('injury_status') ? '' : 'selected' }}>Select Injury
+                            Status
+                        </option>
+                        <option {{ old('injury_status') === 'Minor Injury' ? 'selected' : '' }}>Minor Injury</option>
+                        <option {{ old('injury_status') === 'Serious Injury' ? 'selected' : '' }}>Serious Injury
+                        </option>
+                        <option {{ old('injury_status') === 'Critical' ? 'selected' : '' }}>Critical</option>
+                        <option {{ old('injury_status') === 'Deceased' ? 'selected' : '' }}>Deceased</option>
+                    </select>
+                    @error('injury_status')
+                        <p class="text-red-500 text-[12px]">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Transportation --}}
+                    <select name="transportation_type"
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                        required>
+                        <option value="" disabled {{ old('transportation_type') ? '' : 'selected' }}>Select
+                            Transportation
+                            Type</option>
+                        <option {{ old('transportation_type') === 'Ambulance' ? 'selected' : '' }}>Ambulance</option>
+                        <option {{ old('transportation_type') === 'Private Vehicle' ? 'selected' : '' }}>Private
+                            Vehicle
+                        </option>
+                        <option {{ old('transportation_type') === 'Walk-in' ? 'selected' : '' }}>Walk-in</option>
+                        <option {{ old('transportation_type') === 'Police Vehicle' ? 'selected' : '' }}>Police Vehicle
+                        </option>
+                    </select>
+
+                    {{-- Incident Role --}}
+                    <select name="incident_position"
+                        class="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-[14px] focus:ring-2 focus:ring-blue-500 bg-white"
+                        required>
+                        <option value="" disabled {{ old('incident_position') ? '' : 'selected' }}>Select Role or
+                            Position</option>
+                        <option {{ old('incident_position') === 'Driver' ? 'selected' : '' }}>Driver</option>
+                        <option {{ old('incident_position') === 'Passenger' ? 'selected' : '' }}>Passenger</option>
+                        <option {{ old('incident_position') === 'Pedestrian' ? 'selected' : '' }}>Pedestrian</option>
+                        <option {{ old('incident_position') === 'Witness' ? 'selected' : '' }}>Witness</option>
+                        <option {{ old('incident_position') === 'Evacuee' ? 'selected' : '' }}>Evacuee</option>
+                    </select>
+
+                    {{-- First Aid --}}
+                    <div
+                        class="flex items-center justify-between border border-gray-300 rounded-lg px-4 py-2.5 text-[14px]">
+                        <label class="text-gray-700 font-[Roboto] font-medium">First Aid Applied?</label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-1.5">
+                                <input type="radio" name="first_aid_applied" value="Yes"
+                                    class="text-blue-600 w-4 h-4"
+                                    {{ old('first_aid_applied') === 'Yes' ? 'checked' : '' }} required>
+                                <span>Yes</span>
+                            </label>
+                            <label class="flex items-center gap-1.5">
+                                <input type="radio" name="first_aid_applied" value="No"
+                                    class="text-blue-600 w-4 h-4"
+                                    {{ old('first_aid_applied') === 'No' ? 'checked' : '' }}>
+                                <span>No</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Buttons --}}
+                    <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" onclick="closeModal()"
+                            class="bg-gray-100 text-gray-700 font-[Poppins] px-5 py-2 rounded-lg hover:bg-gray-200 w-full sm:w-auto">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="bg-blue-600 text-white font-[Poppins] px-5 py-2 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 w-full sm:w-auto">
+                            Submit
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
 
-    {{-- Scripts --}}
-    {{-- 1. Chart.js CDN --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
-        const bedsData = @json($beds);
 
-        function openModal(bedId) {
-            const bed = bedsData.find(b => b.id === bedId);
-            if (!bed) return console.error("Bed not found:", bedId);
+        {{-- Scripts --}}
+        {{-- 1. Chart.js CDN --}}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-            document.getElementById('modalBedNumber').innerText = bed.bed_number;
-            document.getElementById('modalBedType').innerText = bed.bed_type;
-            document.getElementById('modalRoomNumber').innerText = bed.room_number;
-            document.getElementById('modalBedId').value = bed.id;
-
-            document.getElementById('bedModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal() {
-            document.getElementById('bedModal').classList.add('hidden');
-            document.body.style.overflow = '';
-        }
-
-        // --- GRAPH LOGIC ---
-        document.addEventListener('DOMContentLoaded', function() {
-            // Receive data from Controller
-            const injuryData = @json($injuryStatusData);
-            const roleData = @json($roleData);
-            const firstAidData = @json($firstAidData);
-            const genderData = @json($genderData);
-
-            // 1. Injury Chart (Bar)
-            new Chart(document.getElementById('injuryChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Minor', 'Serious', 'Critical', 'Deceased'],
-                    datasets: [{
-                        label: 'Count',
-                        data: injuryData,
-                        backgroundColor: ['#fcd34d', '#f97316', '#ef4444', '#1f2937'], // Yellow, Orange, Red, Dark
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // 2. Incident Role (Doughnut)
-            new Chart(document.getElementById('roleChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Driver', 'Passenger', 'Pedestrian', 'Witness', 'Evacuee'],
-                    datasets: [{
-                        data: roleData,
-                        backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#6b7280', '#f59e0b'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
-                    }
-                }
-            });
-
-            // 3. First Aid (Pie)
-            new Chart(document.getElementById('firstAidChart'), {
-                type: 'pie',
-                data: {
-                    labels: ['Yes', 'No'],
-                    datasets: [{
-                        data: firstAidData,
-                        backgroundColor: ['#10b981', '#ef4444'], // Green, Red
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10 } }
-                    }
-                }
-            });
-
-            // 4. Gender (Pie)
-            new Chart(document.getElementById('genderChart'), {
-                type: 'pie',
-                data: {
-                    labels: ['Male', 'Female'],
-                    datasets: [{
-                        data: genderData,
-                        backgroundColor: ['#3b82f6', '#ec4899'], // Blue, Pink
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 10 } }
-                    }
-                }
-            });
-        });
-    </script>
-
-    {{-- Auto-open modal if validation failed --}}
-    @if ($errors->any() && old('bed_id'))
         <script>
+            const bedsData = @json($beds);
+
+            function openModal(bedId) {
+                const bed = bedsData.find(b => b.id === bedId);
+                if (!bed) return console.error("Bed not found:", bedId);
+
+                document.getElementById('modalBedNumber').innerText = bed.bed_number;
+                document.getElementById('modalBedType').innerText = bed.bed_type;
+                document.getElementById('modalRoomNumber').innerText = bed.room_number;
+                document.getElementById('modalBedId').value = bed.id;
+
+                document.getElementById('bedModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                document.getElementById('bedModal').classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+
+            // --- GRAPH LOGIC ---
             document.addEventListener('DOMContentLoaded', function() {
-                openModal({{ (int) old('bed_id') }});
+                // Receive data from Controller
+                const injuryData = @json($injuryStatusData);
+                const roleData = @json($roleData);
+                const firstAidData = @json($firstAidData);
+                const genderData = @json($genderData);
+
+                // 1. Injury Chart (Bar)
+                new Chart(document.getElementById('injuryChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Minor', 'Serious', 'Critical', 'Deceased'],
+                        datasets: [{
+                            label: 'Count',
+                            data: injuryData,
+                            backgroundColor: ['#fcd34d', '#f97316', '#ef4444',
+                                '#1f2937'
+                            ], // Yellow, Orange, Red, Dark
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 2. Incident Role (Doughnut)
+                new Chart(document.getElementById('roleChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Driver', 'Passenger', 'Pedestrian', 'Witness', 'Evacuee'],
+                        datasets: [{
+                            data: roleData,
+                            backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#6b7280', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 10,
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 3. First Aid (Pie)
+                new Chart(document.getElementById('firstAidChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Yes', 'No'],
+                        datasets: [{
+                            data: firstAidData,
+                            backgroundColor: ['#10b981', '#ef4444'], // Green, Red
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 10
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 4. Gender (Pie)
+                new Chart(document.getElementById('genderChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Male', 'Female'],
+                        datasets: [{
+                            data: genderData,
+                            backgroundColor: ['#3b82f6', '#ec4899'], // Blue, Pink
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 10
+                                }
+                            }
+                        }
+                    }
+                });
             });
         </script>
-    @endif
 
-    {{-- Fade-in animation --}}
-    <style>
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
+        {{-- Auto-open modal if validation failed --}}
+        @if ($errors->any() && old('bed_id'))
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    openModal({{ (int) old('bed_id') }});
+                });
+            </script>
+        @endif
+
+        {{-- Fade-in animation --}}
+        <style>
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
             }
 
-            to {
-                opacity: 1;
-                transform: scale(1);
+            .animate-fadeIn {
+                animation: fadeIn 0.25s ease-out;
             }
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.25s ease-out;
-        }
-    </style>
+        </style>
 
 </x-layout.layout>

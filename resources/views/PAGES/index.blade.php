@@ -67,7 +67,7 @@
 
     <main class="pt-16 min-h-screen">
         <h4 class="px-8 py-4 font-[Poppins] text-base sm:text-lg font-bold bg-blue-100 text-blue-800 shadow-inner">
-            <span class="material-symbols-outlined mr-2 align-middle">phone_in_talk</span> Agency Hotline Numbers
+            <span class="material-symbols-outlined mr-2 align-middle">phone_in_talk</span> Iligan Emergency Agency Hotline Numbers
         </h4>
 
         <div class="px-4 sm:px-6 lg:px-8 py-6">

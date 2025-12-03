@@ -62,17 +62,17 @@
                 <table class="w-full text-xs font-[Roboto] min-w-[750px] text-left text-gray-600">
                     <thead class="bg-gray-100 text-gray-700 uppercase tracking-wider border-b border-gray-200">
                         <tr class="text-center">
-                            <th scope="col" class="px-5 py-3 font-bold text-center">No</th>
-                            <th scope="col" class="px-5 py-3 font-bold">Responder</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-center">Shift</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-center">Time-in</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-center">Status</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-center">Action</th>
+                            <th scope="col" class="px-3 py-2 font-bold text-start ">No</th>
+                            <th scope="col" class="px-3 py-2 font-bold text-start">Responder</th>
+                            <th scope="col" class="px-3 py-2 font-bold text-start ">Shift</th>
+                            <th scope="col" class="px-3 py-2 font-bold text-start ">Time-in</th>
+                            <th scope="col" class="px-3 py-2 font-bold text-start ">Status</th>
+                            <th scope="col" class="px-3 py-2 font-bold  text-start">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach ($users as $user)
-                        <tr class="text-center">
+                        <tr class="">
                             <td class="py-2 px-3">{{ $loop->iteration }}</td>
                             <td class="py-2 px-3">{{ $user->firstname }} {{ $user->lastname }}</td>
                             <td class="py-2 px-3">{{ $shift }}</td>
@@ -107,7 +107,7 @@
                                 <span class="bg-gray-100 text-gray-500 font-semibold rounded px-2 py-1">No Record</span>
                                 @endif
                             </td>
-                            <td class=" py-2 px-3 flex flex-row justify-center item-center gap-2">
+                            <td class=" py-2 px-3 flex flex-row justify-start item-center gap-2">
                                 @if (!$attendance)
                                 <form action="{{ route('operation-officer.attendance-time-in') }}" method="POST">
                                     @csrf

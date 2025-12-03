@@ -63,7 +63,7 @@
                 ->get();
                 @endphp
 
-                <form action="{{ route('operation-officer.submit-deploy', $report->id) }}" method="POST">
+                <form action="{{ route('operation-officer.submit-deploy', $report->submitted_report_id) }}" method="POST">
                     @csrf
 
                     {{-- VEHICLE SELECTION --}}
@@ -245,98 +245,101 @@
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    // We wrap the logic in a block to prevent variable name collisions 
+    // when this script is rendered inside a loop.
+    {
         const modalId = "{{ $report->id }}";
 
-        const vehicleCheckboxes = document.querySelectorAll(`.vehicle-checkbox-${modalId}`);
-        const responderCheckboxes = document.querySelectorAll(`.responder-checkbox-${modalId}`);
+        document.addEventListener("DOMContentLoaded", function() {
+            // Select elements specifically for THIS modal using the unique ID
+            const vehicleCheckboxes = document.querySelectorAll(`.vehicle-checkbox-${modalId}`);
+            const responderCheckboxes = document.querySelectorAll(`.responder-checkbox-${modalId}`);
+            const vehicleTotal = document.getElementById(`total-vehicles-selected-${modalId}`);
+            const responderTotal = document.getElementById(`total-responders-selected-${modalId}`);
+            const noVehiclesMsg = document.getElementById(`no-vehicles-msg-${modalId}`);
 
-        const vehicleTotal = document.getElementById(`total-vehicles-selected-${modalId}`);
-        const responderTotal = document.getElementById(`total-responders-selected-${modalId}`);
-        const noVehiclesMsg = document.getElementById(`no-vehicles-msg-${modalId}`);
+            // Ensure we are getting clean numbers
+            const requests = {
+                "Police Car": parseInt("{{ $report->submittedReport->police_car_request ?? 0 }}"),
+                "Fire Truck": parseInt("{{ $report->submittedReport->fire_truck_request ?? 0 }}"),
+                "Ambulance": parseInt("{{ $report->submittedReport->ambulance_request ?? 0 }}"),
+            };
 
-        // FIX: Ensure clean integer values are output for the JavaScript object
-        const requests = {
-            "Police Car": parseInt("{{ $report->submittedReport->police_car_request ?? 0 }}"),
-            "Fire Truck": parseInt("{{ $report->submittedReport->fire_truck_request ?? 0 }}"),
-            "Ambulance": parseInt("{{ $report->submittedReport->ambulance_request ?? 0 }}"),
-        };
+            // Group vehicles by type
+            const grouped = {
+                "Police Car": [],
+                "Fire Truck": [],
+                "Ambulance": []
+            };
 
-        // Group vehicles by type
-        const grouped = {
-            "Police Car": [],
-            "Fire Truck": [],
-            "Ambulance": []
-        };
-
-        vehicleCheckboxes.forEach(cb => {
-            let type = cb.dataset.type;
-            if (grouped[type]) grouped[type].push(cb);
-        });
-
-        // CHECK IF NO AVAILABLE VEHICLES
-        let unavailableTypes = [];
-        for (let type in grouped) {
-            // Check if a request was made for this vehicle type AND there are no available vehicles
-            if (requests[type] > 0) {
-                const available = grouped[type].filter(v => v.dataset.status !== "Unavailable");
-                if (available.length === 0) {
-                    unavailableTypes.push(type);
-                }
-            }
-        }
-
-        if (unavailableTypes.length > 0) {
-            noVehiclesMsg.classList.remove("hidden");
-            noVehiclesMsg.textContent = "No available vehicles for: " + unavailableTypes.join(", ");
-        }
-
-        // LIMIT SELECTION PER VEHICLE TYPE
-        function enforceVehicleRules() {
-            let total = 0;
-
-            for (let type in grouped) {
-                const req = requests[type];
-                const list = grouped[type];
-
-                const checked = list.filter(v => v.checked);
-                total += checked.length;
-
-                list.forEach(v => {
-                    if (v.dataset.status === "Unavailable") {
-                        // Keep unavailable vehicles disabled
-                        v.disabled = true;
-                    } else if (!v.checked && checked.length >= req) {
-                        // Disable available vehicles if the requested limit is reached
-                        v.disabled = true;
-                    } else {
-                        // Enable available vehicles if the limit is not reached
-                        v.disabled = false;
-                    }
-                });
-            }
-
-            vehicleTotal.textContent = total;
-        }
-
-        vehicleCheckboxes.forEach(cb => cb.addEventListener("change", enforceVehicleRules));
-        enforceVehicleRules();
-
-        // RESPONDERS – disable if unavailable
-        function enforceResponderRules() {
-            let total = 0;
-
-            responderCheckboxes.forEach(cb => {
-                if (cb.dataset.status === "Unavailable") {
-                    cb.disabled = true;
-                }
-                if (cb.checked) total++;
+            vehicleCheckboxes.forEach(cb => {
+                let type = cb.dataset.type;
+                if (grouped[type]) grouped[type].push(cb);
             });
 
-            responderTotal.textContent = total;
-        }
+            // CHECK IF NO AVAILABLE VEHICLES
+            let unavailableTypes = [];
+            for (let type in grouped) {
+                if (requests[type] > 0) {
+                    const available = grouped[type].filter(v => v.dataset.status !== "Unavailable");
+                    if (available.length === 0) {
+                        unavailableTypes.push(type);
+                    }
+                }
+            }
 
-        responderCheckboxes.forEach(cb => cb.addEventListener("change", enforceResponderRules));
-        enforceResponderRules();
-    });
+            if (unavailableTypes.length > 0 && noVehiclesMsg) {
+                noVehiclesMsg.classList.remove("hidden");
+                noVehiclesMsg.textContent = "No available vehicles for: " + unavailableTypes.join(", ");
+            }
+
+            // LIMIT SELECTION PER VEHICLE TYPE
+            function enforceVehicleRules() {
+                let total = 0;
+
+                for (let type in grouped) {
+                    const req = requests[type];
+                    const list = grouped[type];
+
+                    // Count how many are CURRENTLY checked
+                    const checked = list.filter(v => v.checked);
+                    total += checked.length;
+
+                    list.forEach(v => {
+                        if (v.dataset.status === "Unavailable") {
+                            v.disabled = true;
+                        } else if (!v.checked && checked.length >= req) {
+                            // If not checked, and we reached the limit, disable it
+                            v.disabled = true;
+                        } else {
+                            // Otherwise it's free to be toggled
+                            v.disabled = false;
+                        }
+                    });
+                }
+
+                if (vehicleTotal) vehicleTotal.textContent = total;
+            }
+
+            // Attach event listeners
+            vehicleCheckboxes.forEach(cb => cb.addEventListener("change", enforceVehicleRules));
+            // Run once on load to set initial state
+            enforceVehicleRules();
+
+            // RESPONDERS LOGIC
+            function enforceResponderRules() {
+                let total = 0;
+                responderCheckboxes.forEach(cb => {
+                    if (cb.dataset.status === "Unavailable") {
+                        cb.disabled = true;
+                    }
+                    if (cb.checked) total++;
+                });
+                if (responderTotal) responderTotal.textContent = total;
+            }
+
+            responderCheckboxes.forEach(cb => cb.addEventListener("change", enforceResponderRules));
+            enforceResponderRules();
+        });
+    }
 </script>
