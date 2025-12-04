@@ -117,12 +117,12 @@
 
                         <div>
                             <label for="incident_latitude" class="block text-sm font-medium text-gray-700">Latitude (Manual Input)</label>
-                            <input type="text" id="incident_latitude" name="incident_latitude" value="{{ $latitude }}" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., 14.5995">
+                            <input type="text" readonly id="incident_latitude" name="incident_latitude" value="{{ $latitude }}" class="bg-gray-100 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., 14.5995">
                         </div>
 
                         <div>
                             <label for="incident_longitude" class="block text-sm font-medium text-gray-700">Longitude (Manual Input)</label>
-                            <input type="text" id="incident_longitude" name="incident_longitude" value="{{ $longitude }}" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., 120.9842">
+                            <input type="text" readonly id="incident_longitude" name="incident_longitude" value="{{ $longitude }}" class="bg-gray-100 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., 120.9842">
                         </div>
 
                     </div>
@@ -296,12 +296,12 @@
 
                         <div>
                             <label for="reported_by" class="block text-sm font-medium text-gray-700">Reported By *</label>
-                            <input type="text" id="reported_by" name="reported_by" value="{{ auth()->user()->firstname }} {{ auth()->user()->lastname }}" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name or Agency ID">
+                            <input type="text" id="reported_by" readonly name="reported_by" value="{{ auth()->user()->firstname }} {{ auth()->user()->lastname }}" required class="bg-gray-100 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name or Agency ID">
                         </div>
 
                         <div>
                             <label for="response_lead_agency" class="block text-sm font-medium text-gray-700">Response Lead Agency *</label>
-                            <input type="text" id="response_lead_agency" name="response_lead_agency" value="{{ auth()->user()->agency->agencyNames }}" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., LTO, Local Police">
+                            <input type="text" readonly id="response_lead_agency" name="response_lead_agency" value="{{ auth()->user()->agency->agencyNames }}" required class="bg-gray-100 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="e.g., LTO, Local Police">
                         </div>
 
                         <div>
@@ -314,6 +314,7 @@
                             <input type="text" id="supervising_officer" name="supervising_officer" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name/Badge of Supervisor">
                         </div>
 
+                        @if ($report->submittedReport->incident_category === 'Road Accidents')
                         <div>
                             <label for="hit_and_run" class="block text-sm font-medium text-gray-700">Hit and Run? *</label>
                             <select id="hit_and_run" name="hit_and_run" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
@@ -322,6 +323,7 @@
                                 <option value="No">No</option>
                             </select>
                         </div>
+                        @endif
                     </div>
 
                     <div class="mt-6 space-y-4">

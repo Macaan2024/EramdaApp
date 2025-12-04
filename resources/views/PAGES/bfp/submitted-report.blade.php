@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="flex flex-row justify-between items-center mb-3">
         <h6 class="font-[Poppins] text-[15px] text-gray-700">Submitted Reports</h6>
-        <a class="bg-blue-700 text-white py-1 px-4 rounded-sm"
+        <a class="bg-blue-700 text-white py-1 px-3 rounded-sm"
             href="{{ route('operation-officer.add-report') }}">Submit Report</a>
     </div>
 
@@ -50,15 +50,16 @@
 
             <thead class="bg-gradient-to-r from-blue-600 to-green-600 text-white font-[Poppins] text-[13px] uppercase">
                 <tr class="text-left">
-                    <th class="px-4 py-3">No</th>
-                    <th class="px-4 py-3">Incident</th>
-                    <th class="px-4 py-3">Type</th>
-                    <th class="px-4 py-3">Barangay</th>
-                    <th class="px-4 py-3">Level</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Report Action</th>
-                    <th class="px-4 py-3">Date</th>
-                    <th class="px-4 py-3">Action</th>
+                    <th class="px-3 py-2">No</th>
+                    <th class="px-3 py-2">Incident</th>
+                    <th class="px-3 py-2">Type</th>
+                    <th class="px-3 py-2">Nearest</th>
+                    <th class="px-3 py-2">Barangay</th>
+                    <th class="px-3 py-2">Level</th>
+                    <th class="px-3 py-2">Status</th>
+                    <th class="px-3 py-2">Report Action</th>
+                    <th class="px-3 py-2">Date</th>
+                    <th class="px-3 py-2">Action</th>
                 </tr>
             </thead>
 
@@ -66,15 +67,15 @@
                 @forelse ($receives as $index => $receive)
                 <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition">
 
-                    <td class="px-4 py-3">{{ $index + 1 }}</td>
+                    <td class="px-3 py-2">{{ $index + 1 }}</td>
 
-                    <td class="px-4 py-3">{{ $receive->submittedReport->incident_category ?? 'N/A' }}</td>
+                    <td class="px-3 py-2">{{ $receive->submittedReport->incident_category ?? 'N/A' }}</td>
 
-                    <td class="px-4 py-3">{{ $receive->submittedReport->incident_type ?? 'N/A' }}</td>
+                    <td class="px-3 py-2">{{ $receive->submittedReport->incident_type ?? 'N/A' }}</td>
+                    <td class="px-3 py-2">{{ $receive->nearest_agency_name }}</td>
+                    <td class="px-3 py-2">{{ $receive->submittedReport->barangay_name ?? 'N/A' }}</td>
 
-                    <td class="px-4 py-3">{{ $receive->submittedReport->barangay_name ?? 'N/A' }}</td>
-
-                    <td class="px-4 py-3">
+                    <td class="px-3 py-2">
                         @php
                         $alarmColor = match($receive->submittedReport->alarm_level) {
                         'Level 1' => 'bg-yellow-500 text-white',
@@ -88,7 +89,7 @@
                         </span>
                     </td>
 
-                    <td class="px-4 py-3">
+                    <td class="px-3 py-2">
                         @php
                         $statusColor = match($receive->submittedReport->report_status) {
                         'Pending' => 'bg-yellow-500 text-white',
@@ -101,30 +102,20 @@
                             {{ $receive->submittedReport->report_status }}
                         </span>
                     </td>
+                    <td class="px-3 py-2">{{ $receive->report_action }}</td>
 
-                    <td class="px-4 py-3">{{ $receive->report_action }}</td>
-
-                    <td class="px-4 py-3">
+                    <td class="px-3 py-2">
                         {{ $receive->created_at->timezone('Asia/Manila')->format('F d Y, g:i A') }}
                     </td>
-
-
-                    <td class="px-4 py-3">
+                    <td class="px-3 py-2">
                         <div class="flex flex-row gap-1">
-
-                            @if ($receive->report_action !== 'Accepted')
-                            <x-partials.modality-deploy-units :report="$receive" />
-                            @endif
-
                             <x-partials.modality-track-report :report="$receive" />
-
                         </div>
                     </td>
-
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" class="px-4 py-4 text-center text-gray-500">
+                    <td colspan="11" class="px-3 py-4 text-center text-gray-500">
                         No submitted reports found.
                     </td>
                 </tr>

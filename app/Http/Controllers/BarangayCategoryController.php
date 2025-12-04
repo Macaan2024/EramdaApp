@@ -8,5 +8,7 @@ class BarangayCategoryController extends Controller
 {
     public function index () {
         
+
+        return view('PAGES/admin/incident-report-barangay-category');
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Agency;
 use App\Models\AgencyReportAction;
 use App\Models\EmergencyRoomBed;
 use App\Models\EmergencyVehicle;
+use App\Models\Incident;
 use App\Models\IndividualErBedList;
 use App\Models\SubmittedReport;
 use App\Models\TreatmentService;
@@ -110,8 +111,130 @@ class DashboardsController extends Controller
     public function adminIndex()
     {
 
-        return view('PAGES/admin/dashboard');
+        $pendingReportsList = SubmittedReport::where('report_status', 'Pending')->latest()->get();
+        $ongoingReportsList = SubmittedReport::where('report_status', 'Ongoing')->latest()->get();
+        $resolvedReportsList = SubmittedReport::where('report_status', 'Resolved')->latest()->get();
+        $allReportsList     = SubmittedReport::latest()->get(); // For "Total"
+
+        // --- 2. AGENCY ACTIONS (Counts & Lists) ---
+        $declineActionList = AgencyReportAction::where('report_action', 'Declined')->with('submittedReport')->latest()->get();
+        $acceptActionList  = AgencyReportAction::where('report_action', 'Accepted')->with('submittedReport')->latest()->get();
+        $pendingActionList = AgencyReportAction::where('report_action', 'Pending')->with('submittedReport')->latest()->get();
+        $allActionList     = AgencyReportAction::with('submittedReport')->latest()->get();
+
+
+        $pendingReports = SubmittedReport::where('report_status', 'Pending')->count();
+        $ongoingReports = SubmittedReport::where('report_status', 'Ongoing')->count();
+        $resolvedReports = SubmittedReport::where('report_status', 'Resolved')->count();
+        $totalReports = SubmittedReport::count();
+
+        $declineReportAction = AgencyReportAction::where('report_action', 'Declined')->count();
+        $acceptReportAction = AgencyReportAction::where('report_action', 'Accepted')->count();
+        $pendingReportAction = AgencyReportAction::where('report_action', 'Pending')->count();
+        $totalReportAction = AgencyReportAction::count();
+
+        // --- 1. EXISTING LOGIC (Barangays & Categories) ---
+        $categoryIncidents = SubmittedReport::where('report_status', 'Resolved')
+            ->whereIn('incident_category', ['Road Accidents', 'Disaster Incidents'])
+            ->get();
+
+        $roadAccidents = $categoryIncidents->where('incident_category', 'Road Accidents');
+        $disasterIncidents = $categoryIncidents->where('incident_category', 'Disaster Incidents');
+
+        $barangayList = [
+            'Abuno',
+            'Acmac-Mariano Badelles Sr.',
+            'Bagong Silang',
+            'Bonbonon',
+            'Bunawan',
+            'Buru-un',
+            'Dalipuga',
+            'Del Carmen',
+            'Digkilaan',
+            'Ditucalan',
+            'Dulag',
+            'Hinaplanon',
+            'Hindang',
+            'Kabacsanan',
+            'Kalilangan',
+            'Kiwalan',
+            'Lanipao',
+            'Luinab',
+            'Mahayahay',
+            'Mainit',
+            'Mandulog',
+            'Maria Cristina',
+            'Pala-o',
+            'Panoroganan',
+            'Poblacion',
+            'Puga-an',
+            'Rogongon',
+            'San Miguel',
+            'San Roque',
+            'Santa Elena',
+            'Santa Filomena',
+            'Santiago',
+            'Santo Rosario',
+            'Saray',
+            'Suarez',
+            'Tambacan',
+            'Tibanga',
+            'Tipanoy',
+            'Tomas L. Cabili (Tominobo Proper)',
+            'Tubod',
+            'Upper Hinaplanon',
+            'Upper Tominobo',
+            'Ubaldo Laya'
+        ];
+
+        $dbCounts = SubmittedReport::where('report_status', 'Resolved')
+            ->selectRaw('barangay_name, COUNT(*) as total')
+            ->groupBy('barangay_name')
+            ->pluck('total', 'barangay_name');
+
+        $barangayData = collect($barangayList)->map(function ($name) use ($dbCounts) {
+            return $dbCounts[$name] ?? 0;
+        });
+
+        $maxCount = $barangayData->max();
+        $mostActiveIndex = $barangayData->search($maxCount);
+        $mostActiveName = $mostActiveIndex !== false ? $barangayList[$mostActiveIndex] : 'None';
+
+
+        // --- 2. NEW LOGIC: MONTHLY TRENDS (Jan-Dec) ---
+        $monthlyCounts = SubmittedReport::where('report_status', 'Resolved')
+            ->selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            ->whereYear('created_at', date('Y')) // Optional: Filter by current year
+            ->groupBy('month')
+            ->pluck('count', 'month');
+
+        // Fill 1-12 with data or 0
+        $monthData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthData[] = $monthlyCounts[$i] ?? 0;
+        }
+
+
+        return view('PAGES.admin.dashboard', [
+            'incidents' => Incident::paginate(20),
+            'barangayList' => $barangayList,
+            'barangayData' => $barangayData,
+            'roadAccidents' => $roadAccidents,
+            'disasterIncidents' => $disasterIncidents,
+            'mostActiveName' => $mostActiveName,
+            'maxCount' => $maxCount,
+            'monthData' => $monthData, // <--- Pass this new variable
+            'pendingReportsList' => $pendingReportsList,
+            'ongoingReportsList' => $ongoingReportsList,
+            'resolvedReportsList' => $resolvedReportsList,
+            'allReportsList' => $allReportsList,
+            'declineActionList' => $declineActionList,
+            'acceptActionList' => $acceptActionList,
+            'pendingActionList' => $pendingActionList,
+            'allActionList' => $allActionList,
+        ]);
     }
+
     public function nurseIndex()
     {
         $sessionUserAgency = auth()->user()->agency_id;

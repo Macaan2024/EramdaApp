@@ -64,7 +64,7 @@
                             }
                         "
                             class="block w-full p-2 sm:p-3 text-[11px] sm:text-[12px] border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Select Agency</option>
+                            <option value="">Show All User</option>
                             @forelse ($agencies as $agency)
                             <option value="{{ $agency->id }}" {{ $id == $agency->id ? 'selected' : '' }}>
                                 {{ $agency->agencyNames }}

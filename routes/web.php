@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\BarangayCategoryController;
 use App\Http\Controllers\BedReservationController;
 use App\Http\Controllers\DashboardsController;
 use App\Http\Controllers\DeploymentListController;
@@ -163,6 +164,10 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
 
     Route::controller(AgencyCategoryController::class)->group(function () {
         Route::get('agency-category/{id?}', 'index')->name('agency-category');
+    });
+
+    Route::controller(BarangayCategoryController::class)->group(function () {
+        Route::get('barangay-category', 'index')->name('barangay-category');
     });
 
     Route::controller(SubmittedReportController::class)->group(function () {

@@ -312,6 +312,8 @@
                         <input type="text" id="supervising_officer" name="supervising_officer" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" placeholder="Name/Badge of Supervisor">
                     </div>
 
+                    
+
                     <div>
                         <label for="hit_and_run" class="block text-sm font-medium text-gray-700">Hit and Run? *</label>
                         <select id="hit_and_run" name="hit_and_run" required class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">

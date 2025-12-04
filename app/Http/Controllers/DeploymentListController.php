@@ -62,6 +62,28 @@ class DeploymentListController extends Controller
         SubmittedReport::where('id', $reportId)
             ->update(['report_status' => 'Ongoing']);
 
+
+        $responder = User::where('agency_id', auth()->user()->agency_id)
+            ->where('availability_status', 'Available')
+            ->count();
+
+        $vehicle = EmergencyVehicle::where('agency_id', auth()->user()->agency_id)
+            ->where('availabilityStatus', 'Available')
+            ->count();
+
+        // Check if ANY is zero
+        if ($responder <= 0 || $vehicle <= 0) {
+            auth()->user()->agency->update([
+                'availabilityStatus' => 'Unavailable'
+            ]);
+        } else {
+            // If BOTH have available resources
+            auth()->user()->agency->update([
+                'availabilityStatus' => 'Available'
+            ]);
+        }
+
+
         return back()->with('success', 'Units deployed successfully.');
     }
 }

@@ -51,7 +51,7 @@
             </button>
             <ul id="dropdown-example" class="hidden py-2 space-y-1 pl-4 border-l border-blue-600 dark:border-gray-600 ml-2">
                 <li><a href="{{ route('admin.agency-category') }}" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Agency Category</a></li>
-                <li><a href="#" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Barangay Category</a></li>
+                <li><a href="{{ route('admin.barangay-category') }}" class="block py-2 px-3 rounded-lg hover:bg-blue-700/50 dark:hover:bg-gray-700 transition duration-150 font-[Poppins] text-[12px]">Barangay Category</a></li>
             </ul>
         </li>
         @elseif (auth()->user()->user_type === 'operation-officer')

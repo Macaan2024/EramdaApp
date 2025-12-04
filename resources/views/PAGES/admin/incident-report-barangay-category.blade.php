@@ -1,231 +1,234 @@
 <x-layout.layout>
+    @php
+    // ------------------------------------------------------
+    // LOGIC BLOCK (Your Barangay Logic)
+    // ------------------------------------------------------
+
+    // 1. Static list of Barangays in Iligan City
+    $barangays = [
+        'Abuno', 'Acmac-Mariano Badelles Sr.', 'Bagong Silang', 'Bonbonon', 'Bunawan',
+        'Buru-un', 'Dalipuga', 'Del Carmen', 'Digkilaan', 'Ditucalan', 'Dulag',
+        'Hinaplanon', 'Hindang', 'Kabacsanan', 'Kalilangan', 'Kiwalan', 'Lanipao',
+        'Luinab', 'Mahayahay', 'Mainit', 'Mandulog', 'Maria Cristina', 'Pala-o',
+        'Panoroganan', 'Poblacion', 'Puga-an', 'Rogongon', 'San Miguel', 'San Roque',
+        'Santa Elena', 'Santa Filomena', 'Santiago', 'Santo Rosario', 'Saray',
+        'Suarez', 'Tambacan', 'Tibanga', 'Tipanoy', 'Tomas L. Cabili (Tominobo Proper)',
+        'Tubod', 'Upper Hinaplanon', 'Upper Tominobo', 'Ubaldo Laya'
+    ];
+
+    // 2. Base Query
+    $query = \App\Models\AgencyReportAction::with(['submittedReport.user']);
+
+    // 3. Apply Filters
+    if (request('barangay')) {
+        $query->whereHas('submittedReport.user', function($q){
+            $q->where('barangay_name', request('barangay'));
+        });
+    }
+    
+    if (request('date')) {
+        // Timezone Conversion Logic
+        try {
+            $startDate = \Carbon\Carbon::createFromFormat('Y-m-d', request('date'), 'Asia/Manila')
+                            ->startOfDay()->setTimezone('UTC');
+            $endDate   = \Carbon\Carbon::createFromFormat('Y-m-d', request('date'), 'Asia/Manila')
+                            ->endOfDay()->setTimezone('UTC');
+            
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        } catch (\Exception $e) {
+            $query->whereDate('created_at', request('date'));
+        }
+    }
+
+    // 4. Get Filtered Reports
+    $reports = $query->latest()->get();
+
+    // 5. Summary Counts
+    $totalDisaster = $reports->filter(fn($item) => optional($item->submittedReport)->incident_category == 'Disaster Incidents')->count();
+    $totalRoad = $reports->filter(fn($item) => optional($item->submittedReport)->incident_category == 'Road Accidents')->count();
+    $totalPending = $reports->where('report_action', 'Pending')->count();
+    $totalAccepted = $reports->where('report_action', 'Accepted')->count();
+    $totalDeclined = $reports->where('report_action', 'Declined')->count();
+    @endphp
+
     <x-partials.toast-messages />
 
-    <div class="p-4">
-        <!-- 🧭 Title -->
-        <h6 class="font-[Poppins] text-[14px] mb-3 text-gray-800">Submitted Incident Reports</h6>
+    <div class="space-y-6 p-6 font-[Roboto] bg-gray-50 min-h-screen">
 
-        <!-- 🔍 Search & Add Button -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        {{-- Header Section --}}
+        <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-300 pb-4 mb-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-map-marked-alt text-blue-700"></i> Barangay Reports Overview
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Track incidents and reports by specific locations.</p>
+            </div>
+            <div class="mt-2 md:mt-0">
+                 <span class="bg-blue-900 text-white text-[10px] font-bold px-3 py-1 rounded shadow-sm">
+                    SYSTEM DATE: {{ now()->format('M d, Y') }}
+                </span>
+            </div>
+        </div>
 
-            <!-- Search Form -->
-            <form class="w-full md:max-w-md" action="" method="GET">
-                <label for="search-reports" class="sr-only">Search Reports</label>
-                <div class="relative">
-                    <!-- Search Icon -->
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                            fill="none" viewBox="0 0 20 20">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-                        </svg>
+        {{-- Summary Cards (Professional Box Style) --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+            {{-- Disaster --}}
+            <div class="bg-white p-4 border-l-4 border-red-500 shadow-sm rounded-r-md">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Disaster Incidents</p>
+                <h4 class="text-2xl font-bold text-gray-800">{{ $totalDisaster }}</h4>
+            </div>
+            {{-- Road --}}
+            <div class="bg-white p-4 border-l-4 border-orange-500 shadow-sm rounded-r-md">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Road Incidents</p>
+                <h4 class="text-2xl font-bold text-gray-800">{{ $totalRoad }}</h4>
+            </div>
+            {{-- Pending --}}
+            <div class="bg-white p-4 border-l-4 border-gray-500 shadow-sm rounded-r-md">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pending</p>
+                <h4 class="text-2xl font-bold text-gray-800">{{ $totalPending }}</h4>
+            </div>
+            {{-- Accepted --}}
+            <div class="bg-white p-4 border-l-4 border-green-600 shadow-sm rounded-r-md">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Accepted</p>
+                <h4 class="text-2xl font-bold text-gray-800">{{ $totalAccepted }}</h4>
+            </div>
+            {{-- Declined --}}
+            <div class="bg-white p-4 border-l-4 border-red-700 shadow-sm rounded-r-md">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Declined</p>
+                <h4 class="text-2xl font-bold text-gray-800">{{ $totalDeclined }}</h4>
+            </div>
+        </div>
+
+        {{-- Filter Form --}}
+        <div class="bg-white p-4 border border-gray-200 shadow-sm rounded-sm mb-6">
+            <div class="flex items-center gap-2 mb-3 text-sm font-bold text-gray-700">
+                <i class="fas fa-filter text-blue-600"></i> FILTER RECORDS
+            </div>
+            <form method="GET" action="{{ url()->current() }}" class="flex flex-col md:flex-row gap-4 items-end">
+                {{-- Barangay Select --}}
+                <div class="w-full md:w-1/4">
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase">Select Barangay</label>
+                    <div class="relative">
+                        <select name="barangay" onchange="this.form.submit()"
+                            class="w-full text-[13px] border-gray-300 rounded-sm focus:ring-blue-900 focus:border-blue-900 bg-gray-50 h-10">
+                            <option value="">-- All Barangays --</option>
+                            @foreach($barangays as $barangay)
+                            <option value="{{ $barangay }}" {{ request('barangay') == $barangay ? 'selected' : '' }}>
+                                {{ $barangay }}
+                            </option>
+                            @endforeach
+                        </select>
                     </div>
-
-                    <!-- Search Input -->
-                    <input type="search" id="search-reports"
-                        class="block w-full p-3 ps-10 text-[12px] font-[Poppins] text-gray-900 border border-gray-300 rounded-lg bg-gray-50 
-                      focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Search Reports..." name="search" value="{{ request('search') }}" />
-
-                    <!-- Search Button -->
-                    <button type="submit"
-                        class="text-white absolute end-2.5 top-1/2 -translate-y-1/2 
-                   bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none 
-                   focus:ring-blue-300 rounded-lg text-[12px] font-[Poppins] px-4 py-2">
-                        Search
-                    </button>
                 </div>
+
+                {{-- Date --}}
+                <div class="w-full md:w-1/4">
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1 uppercase">Select Date</label>
+                    <input type="date" name="date" value="{{ request('date') }}" onchange="this.form.submit()"
+                        class="w-full text-[13px] border-gray-300 rounded-sm focus:ring-blue-900 focus:border-blue-900 bg-gray-50 h-10">
+                </div>
+
+                {{-- Reset --}}
+                @if(request('barangay') || request('date'))
+                <div class="pb-0.5">
+                    <a href="{{ url()->current() }}" class="inline-flex items-center justify-center h-10 px-4 bg-gray-600 hover:bg-gray-700 text-white text-[12px] font-bold uppercase tracking-wide rounded-sm transition-colors">
+                        Reset Filters
+                    </a>
+                </div>
+                @endif
             </form>
-
-            <!-- Add Report Button -->
-            <a href="{{ route('admin.add-incident-reports') }}"
-                class="bg-blue-700 hover:bg-blue-800 text-white text-[12px] font-[Poppins] rounded-lg px-5 py-2.5 transition mt-2 sm:mt-0">
-                Add Report
-            </a>
         </div>
 
-        <!-- 🏢 Agency Filter -->
-        <div class="w-full sm:w-1/3 mb-6">
-            <select
-                onchange="
-                if (this.value) {
-                    window.location.href = '/admin/logs/reports/{{ $status }}/' + this.value;
-                } else {
-                    window.location.href = '/admin/logs/reports/All';
-                }"
-                class="block w-full p-3 text-[12px] sm:text-[13px] font-[Poppins] text-gray-900 border border-gray-300 rounded-lg bg-gray-50 
-            focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select Agency</option>
-                @forelse ($agencies as $agency)
-                <option value="{{ $agency->id }}" {{ $id == $agency->id ? 'selected' : '' }}>
-                    {{ $agency->agencyNames }}
-                </option>
-                @empty
-                <option disabled>No agencies found</option>
-                @endforelse
-            </select>
+        {{-- Table Container --}}
+        <div class="bg-white shadow-md border border-gray-200 rounded-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-gray-700 min-w-[900px]">
+                    {{-- Table Head (Professional Blue) --}}
+                    <thead class="bg-blue-900 text-white text-[11px] font-bold uppercase tracking-wider">
+                        <tr>
+                            <th class="py-3 px-4 border-r border-blue-800">Report ID</th>
+                            <th class="py-3 px-4 border-r border-blue-800">Reported By</th>
+                            <th class="py-3 px-4 border-r border-blue-800">Barangay</th>
+                            <th class="py-3 px-4 border-r border-blue-800">Incident Category</th>
+                            <th class="py-3 px-4 border-r border-blue-800">Action</th>
+                            <th class="py-3 px-4 border-r border-blue-800">Timestamp</th>
+                            <th class="py-3 px-4 text-center">View</th>
+                        </tr>
+                    </thead>
+
+                    {{-- Table Body --}}
+                    <tbody class="divide-y divide-gray-100 text-[13px]">
+                        @forelse ($reports as $report)
+                        <tr class="hover:bg-blue-50 transition-colors duration-200 even:bg-gray-50">
+                            {{-- ID --}}
+                            <td class="py-3 px-4 font-mono font-bold text-blue-900">
+                                {{ $report->submitted_report_id }}
+                            </td>
+
+                            {{-- Reported By --}}
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-gray-800">
+                                    {{ $report->submittedReport->user->lastname ?? 'Unknown' }}
+                                </div>
+                                <div class="text-[11px] text-gray-500">
+                                    {{ $report->submittedReport->user->position ?? 'N/A' }}
+                                </div>
+                            </td>
+
+                            {{-- Barangay --}}
+                            <td class="py-3 px-4 font-medium text-gray-700">
+                                {{-- Accessing barangay from user relationship --}}
+                                {{ $report->submittedReport->user->barangay ?? 'N/A' }}
+                            </td>
+
+                            {{-- Category --}}
+                            <td class="py-3 px-4">
+                                <span class="bg-gray-100 border border-gray-300 text-gray-700 text-[11px] font-bold px-2 py-1 rounded-sm">
+                                    {{ $report->submittedReport->incident_category ?? 'N/A' }}
+                                </span>
+                            </td>
+
+                            {{-- Action Badge --}}
+                            <td class="py-3 px-4">
+                                @php
+                                $actionColors = [
+                                    'Accepted' => 'bg-green-600 text-white',
+                                    'Declined' => 'bg-red-600 text-white',
+                                    'Completed' => 'bg-blue-600 text-white',
+                                    'Pending'  => 'bg-gray-500 text-white',
+                                ];
+                                $action = $report->report_action ?? 'Pending';
+                                $colors = $actionColors[$action] ?? $actionColors['Pending'];
+                                @endphp
+                                <span class="inline-block {{ $colors }} text-[10px] font-bold uppercase px-2 py-1 rounded-sm">
+                                    {{ $action }}
+                                </span>
+                            </td>
+
+                            {{-- Timestamp --}}
+                            <td class="py-3 px-4 font-mono text-[12px] text-gray-600">
+                                {{ $report->created_at->timezone('Asia/Manila')->format('M d, g:i A') }}
+                            </td>
+
+                            {{-- View Action --}}
+                            <td class="py-3 px-4 text-center">
+                                <x-partials.modality-track-report :report="$report" />
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-gray-400 text-sm italic bg-gray-50">
+                                <i class="fas fa-search mb-2 text-lg"></i>
+                                <p>No submitted reports found matching your filters.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- 🟢 Status Filter Buttons -->
-        <div class="flex flex-wrap gap-3 text-[12px] sm:text-[13px] font-[Poppins] mb-6">
-            <a href="/admin/logs/reports/All/{{ $id ?? '' }}"
-                class="px-4 py-2 rounded-lg transition 
-            {{ $status === 'All' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">All</a>
-
-            <a href="/admin/logs/reports/Pending/{{ $id ?? '' }}"
-                class="px-4 py-2 rounded-lg transition 
-            {{ $status === 'Pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Pending</a>
-
-            <a href="/admin/logs/reports/Ongoing/{{ $id ?? '' }}"
-                class="px-4 py-2 rounded-lg transition 
-            {{ $status === 'Ongoing' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Ongoing</a>
-
-            <a href="/admin/logs/reports/Resolved/{{ $id ?? '' }}"
-                class="px-4 py-2 rounded-lg transition 
-            {{ $status === 'Resolved' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Resolved</a>
-            <a href="/admin/logs/reports/Prank/{{ $id ?? '' }}"
-                class="px-4 py-2 rounded-lg transition 
-            {{ $status === 'Prank' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Prank</a>
-        </div>
-
-        <!-- 📋 Reports Table -->
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-            <table class="w-full text-[12px] font-[Roboto] text-gray-700">
-                <thead class="bg-gradient-to-r from-blue-600 to-green-600 text-white font-[Poppins] text-[13px] uppercase">
-                    <tr class="text-left">
-                        <th class="px-3 py-2">No</th>
-                        <th class="px-3 py-2">Category</th>
-                        <th class="px-3 py-2">Type</th>
-                        <th class="px-3 py-2">Barangay</th>
-                        <th class="px-3 py-2">City</th>
-                        <th class="px-3 py-2">Alarm Level</th>
-                        <th class="px-3 py-2">Reported By</th>
-                        <th class="px-3 py-2">From Agency</th>
-                        <th class="px-3 py-2">Status</th>
-                        <th class="px-3 py-2">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($reports as $report)
-                    <tr class="bg-white hover:bg-gray-100 border-b border-gray-200 text-gray-900">
-                        <td class="px-3 py-2">{{ $loop->iteration }}</td>
-                        <td class="px-3 py-2">{{ $report->incident_category }}</td>
-                        <td class="px-3 py-2">{{ $report->incident_type }}</td>
-                        <td class="px-3 py-2">{{ $report->barangay_name }}</td>
-                        <td class="px-3 py-2">{{ $report->city_name }}</td>
-                        <td class="px-4 sm:px-6 py-3 font-semibold">
-                            @php
-                            $alarmColor = match($report->alarm_level) {
-                            'Level 1' => 'bg-yellow-500 text-white',
-                            'Level 2' => 'bg-orange-500 text-white',
-                            'Level 3' => 'bg-red-600 text-white',
-                            };
-                            @endphp
-
-                            <span class="px-2 py-1 rounded-md text-[12px] {{ $alarmColor }}">
-                                {{ $report->alarm_level }}
-                            </span>
-                        </td>
-                        <td class="px-3 py-2">{{ $report->reported_by ?? 'N/A' }}</td>
-                        <td class="px-3 py-2">{{ $report->from_agency ?? 'N/A' }}</td>
-                        <td class="px-3 py-2 font-medium">
-                            @php
-                            $statusColor = match($report->report_status) {
-                            'Pending' => 'bg-yellow-500 text-white',
-                            'Ongoing' => 'bg-blue-600 text-white',
-                            'Resolved' => 'bg-green-600 text-white',
-                            default => 'bg-gray-300 text-gray-700'
-                            };
-                            @endphp
-                            <span class="px-2 py-1 rounded-md text-[11px] font-[Poppins] {{ $statusColor }}">
-                                {{ $report->report_status }}
-                            </span>
-                        </td>
-                        <td class="px-3 py-2">
-                            <a href="#"
-                                class="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded-sm text-[12px] font-[Poppins]">
-                                View
-                            </a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="text-center py-4 text-gray-400">🚫 No Submitted Reports Found</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 📄 Pagination -->
-        <div class="mt-10 flex justify-center">
-            {{ $reports->links('vendor.pagination.tailwind') }}
-        </div>
-
-        <hr class="my-6">
-
-        <!-- 🧾 Agency Incident Report Actions Table -->
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
-            <table class="w-full text-[12px] font-[Roboto] text-gray-700">
-                <thead class="bg-gradient-to-r from-green-600 to-blue-600 text-white font-[Poppins] text-[13px] uppercase">
-                    <tr class="text-left">
-                        <th class="px-3 py-2">No</th>
-                        <th class="px-3 py-2">Report ID</th>
-                        <th class="px-3 py-2">Nearest Agency</th>
-                        <th class="px-3 py-2">Agency Type</th>
-                        <th class="px-3 py-2">Longitude</th>
-                        <th class="px-3 py-2">Latitude</th>
-                        <th class="px-3 py-2">Action Taken</th>
-                        <th class="px-3 py-2">Decline Reason</th>
-                        <th class="px-3 py-2">Created At</th>
-                        <th class="px-3 py-2">Response At</th>
-                        <th class="px-3 py-2">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($reportActions as $reportAction)
-                    <tr class="bg-white hover:bg-gray-100 border-b border-gray-200 text-gray-900">
-                        <td class="px-3 py-2">{{ $loop->iteration }}</td>
-                        <td class="px-3 py-2">#{{ $reportAction->submitted_report_id }}</td>
-                        <td class="px-3 py-2">{{ $reportAction->nearest_agency_name }}</td>
-                        <td class="px-3 py-2">{{ $reportAction->agency_type }}</td>
-                        <td class="px-3 py-2">{{ $reportAction->agency_longitude }}</td>
-                        <td class="px-3 py-2">{{ $reportAction->agency_latitude }}</td>
-                        <td class="px-3 py-2 font-semibold text-blue-700">{{ $reportAction->report_action }}</td>
-                        <td class="px-3 py-2">
-                            {{ $reportAction->decline_reason ? $action->decline_reason : '—' }}
-                        </td>
-                        <td class="px-3 py-2 text-gray-600">
-                            {{ $reportAction->created_at->format('F j, Y, g:i a') }}
-                        </td>
-                        <td class="px-3 py-2 text-gray-600">
-                            {{ $reportAction->updated_at->format('F j, Y, g:i a') }}
-                        </td>
-                        <td class="px-3 py-2 text-gray-600">
-                            <button class="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded-sm text-[12px] font-[Poppins]">
-                                View
-                            </button>
-                        </td>
-
-
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4 text-gray-400">
-                            🚫 No Agency Incident Report Actions Found
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
     </div>
-
-    <!-- 📄 Pagination -->
-    <div class="mt-8 flex justify-center">
-        {{ $reportActions->links('vendor.pagination.tailwind') }}
-    </div>
-
 
     <x-partials.stack-js />
 </x-layout.layout>
